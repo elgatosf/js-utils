@@ -15,13 +15,9 @@ Utility classes and functions used throughout the Elgato ecosystem.
 npm install @elgato/utils
 ```
 
-## Utilities
+## Disposables
 
-The following utilities are available as part of the `@elgato/utils` module.
-
-### Disposables
-
-#### `deferredDisposable`
+### `deferredDisposable`
 
 Creates a new function that implements `Symbol.dispose` and accepts a disposer function. The disposer function is called when the new function is disposed.
 
@@ -36,9 +32,9 @@ using (deferredDisposable(cleanup)) {
 // "Hello world"
 ```
 
-### Events
+## Events
 
-#### `EventEmitter`
+### `EventEmitter`
 
 An strongly-typed event emitter that enables the listening for, and emitting of, events; supported in browser and Node.js environments.
 
@@ -55,9 +51,9 @@ emitter.on("created", (name: string) => {
 });
 ```
 
-### JSON
+## JSON
 
-#### `JsonObject`
+### `JsonObject`
 
 Type that represents an object within JSON.
 
@@ -69,7 +65,7 @@ const obj: JsonObject = {
 };
 ```
 
-#### `JsonPrimitive`
+### `JsonPrimitive`
 
 Type that represents a primitive within JSON, for example a string or number.
 
@@ -79,7 +75,7 @@ import { type JsonPrimitive } from "@elgato/utils";
 const value: JsonPrimitive = "Elgato";
 ```
 
-#### `JsonValue`
+### `JsonValue`
 
 Type that represents a valid JSON value, for example an object, array, or primitive.
 
@@ -89,9 +85,9 @@ import { type JsonValue } from "@elgato/utils";
 const value: JsonValue = ["Hello", "World"];
 ```
 
-### Miscellaneous
+## Miscellaneous
 
-#### `Enumerable`
+### `Enumerable`
 
 Provides a read-only iterable collection of items that also acts as a partial polyfill for iterator helpers.
 
@@ -122,7 +118,7 @@ Polyfilled iterator helpers:
 - `take(limit)`
 - `toArray()`
 
-#### `Lazy`
+### `Lazy`
 
 Object that wraps a lazily instantiated value, similar to C# [`Lazy<T>`](https://learn.microsoft.com/en-us/dotnet/framework/performance/lazy-initialization).
 
@@ -133,9 +129,9 @@ const lazy = new Lazy(() => "Hello world");
 lazy.value; // "Hello world";
 ```
 
-### Objects
+## Objects
 
-#### `get(source, path)`
+### `get(source, path)`
 
 Gets the value at the specified (deep) path.
 
@@ -149,7 +145,7 @@ const obj = {
 get(obj, "name"); // Elgato
 ```
 
-#### `set(target, path, value)`
+### `set(target, path, value)`
 
 Sets the value at the specified (deep) path.
 
@@ -163,9 +159,9 @@ const obj = {
 set(obj, "name", "Elgato"); // { name: "Elgato" }
 ```
 
-### Parsers
+## Parsers
 
-#### `parseBoolean(value)`
+### `parseBoolean(value)`
 
 Parses the value a truthy-boolean; the strings `"0"` and `"false"` are parsed as `false`.
 
@@ -176,7 +172,7 @@ const a = parseBoolean(1); // true
 const b = parseBoolean("false"); // false
 ```
 
-#### `parseNumber(value)`
+### `parseNumber(value)`
 
 Attempts to parse a value to a number; returns `undefined` when parsing was unsuccessful.
 
@@ -186,9 +182,9 @@ import { parseNumber } from "@elgato/utils";
 const number = parseNumber("13"); // 13
 ```
 
-### Promises
+## Promises
 
-#### `Promise.withResolvers()`
+### `Promise.withResolvers()`
 
 Static function that returns an object that contains the promise, and two functions to resolve or reject it. Polyfill of [Promise.withResolvers()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/withResolvers).
 
@@ -198,9 +194,9 @@ import "@elgato/utils";
 const { promise, resolve, reject } = Promise.withResolvers<string>();
 ```
 
-### Timers
+## Timers
 
-#### `debounce(fn, delay)`
+### `debounce(fn, delay)`
 
 Wraps a function; subsequent invocations of the wrapped function made within the specified delay are debounced to prevent multiple calls.
 
