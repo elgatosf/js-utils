@@ -12,5 +12,9 @@
         "noImplicitOverride": true,
         "verbatimModuleSyntax": true
     },
-    "exclude": ["src/**/__tests/"]
+    "exclude": [
+        "./dist/",
+        "./node_modules/",
+        "./src/**/__tests/"
+    ]
 }
