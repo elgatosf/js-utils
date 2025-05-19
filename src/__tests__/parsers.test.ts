@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { parseBoolean, parseNumber } from "../parse.js";
+import { parseBoolean, parseNumber } from "../parsers.js";
 
 /**
  * Provides assertions for {@link parseBoolean}.

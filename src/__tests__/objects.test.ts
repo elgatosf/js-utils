@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { freeze, get, set } from "../object.js";
+import { freeze, get, set } from "../objects.js";
 
 /**
  * Provides assertions for {@link freeze}.
@@ -62,25 +62,25 @@ describe("get", () => {
 	it("should retrieve value of simple path", () => {
 		// Arrange, act, assert.
 		const obj = { foo: "bar" };
-		expect(get("foo", obj)).toBe("bar");
+		expect(get(obj, "foo")).toBe("bar");
 	});
 
 	it("should retrieve value of nested path", () => {
 		// Arrange, act, assert.
 		const obj = { nested: { number: 13 } };
-		expect(get("nested.number", obj)).toBe(13);
+		expect(get(obj, "nested.number")).toBe(13);
 	});
 
 	it("should retrieve value of path that returns falsy", () => {
 		// Arrange, act, assert.
 		const obj = { falsy: false };
-		expect(get("falsy", obj)).toBe(false);
+		expect(get(obj, "falsy")).toBe(false);
 	});
 
 	it("should retrieve undefined when the property does not exist", () => {
 		// Arrange, act, assert.
 		const obj = {};
-		expect(get("__unknown.__prop", obj)).toBe(undefined);
+		expect(get(obj, "__unknown.__prop")).toBe(undefined);
 	});
 });
 
@@ -91,7 +91,7 @@ describe("set", () => {
 	it("should set value of simple path", () => {
 		// Arrange, act.
 		const obj = { foo: "Hello" };
-		set("foo", obj, "Good bye");
+		set(obj, "foo", "Good bye");
 
 		// Assert.
 		expect(obj.foo).toBe("Good bye");
@@ -100,7 +100,7 @@ describe("set", () => {
 	it("should set value of nested path", () => {
 		// Arrange, act.
 		const obj = { nested: { number: 13 } };
-		set("nested.number", obj, 101);
+		set(obj, "nested.number", 101);
 
 		// Assert.
 		expect(obj.nested.number).toBe(101);
@@ -109,7 +109,7 @@ describe("set", () => {
 	it("should add value of simple path", () => {
 		// Arrange, act.
 		const obj: Record<string, unknown> = {};
-		set("foo", obj, "bar");
+		set(obj, "foo", "bar");
 
 		// Assert.
 		expect(obj.foo).toBe("bar");
@@ -118,7 +118,7 @@ describe("set", () => {
 	it("should add value of nested path", () => {
 		// Arrange, act.
 		const obj: Record<string, Record<string, unknown>> = { nested: {} };
-		set("nested.number", obj, 13);
+		set(obj, "nested.number", 13);
 
 		// Assert.
 		expect(obj.nested.number).toBe(13);

@@ -11,23 +11,23 @@ export function freeze<T>(value: T): void {
 
 /**
  * Gets the value at the specified {@link path}.
- * @param path Path to the property to get.
  * @param source Source object that is being read from.
+ * @param path Path to the property to get.
  * @returns Value of the property.
  */
-export function get(path: string, source: unknown): unknown {
+export function get(source: unknown, path: string): unknown {
 	const props: string[] = path.split(".");
 	return props.reduce((obj, prop) => obj && obj[prop as keyof object], source);
 }
 
 /**
  * Sets the specified `value` on the `target` object at the desired property `path`.
- * @param path The path to the property to set.
  * @param target The target object that is being written to.
+ * @param path The path to the property to set.
  * @param value The value to write.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function set(path: string, target: any, value: unknown): void {
+export function set(target: any, path: string, value: unknown): void {
 	const props = path.split(".");
 	props.reduce((obj, prop, i) => {
 		return i === props.length - 1 ? (obj[prop] = value) : obj[prop] || (obj[prop] = {});
