@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import "../promises.js";
+
 describe("PromiseCompletionSource<T>", () => {
 	it("Defaults to pending", async () => {
 		// given, when, then.
