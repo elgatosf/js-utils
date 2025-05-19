@@ -1,0 +1,38 @@
+{
+    "name": "@elgato/utils",
+    "version": "0.0.0",
+    "description": "Utility functions used throughout the Elgato ecosystem.",
+    "type": "module",
+    "scripts": {
+        "build": "rm -rf dist/ && tsc",
+        "lint": "eslint --max-warnings 0",
+        "test": "vitest run --typecheck",
+        "test:watch": "vitest --typecheck",
+        "type:check": "tsc --project tsconfig.test.json"
+    },
+    "prettier": "@elgato/prettier-config",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/elgatosf/js-utils.git"
+    },
+    "keywords": [
+        "elgato"
+    ],
+    "author": {
+        "name": "Elgato",
+        "url": "https://www.elgato.com"
+    },
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/elgatosf/js-utils/issues"
+    },
+    "homepage": "https://github.com/elgatosf/js-utils#readme",
+    "devDependencies": {
+        "@elgato/eslint-config": "^0.1.0",
+        "@elgato/prettier-config": "^0.2.6",
+        "@tsconfig/node20": "^20.1.5",
+        "@types/node": "^22.15.19",
+        "typescript": "^5.8.3",
+        "vitest": "^3.1.3"
+    }
+}
