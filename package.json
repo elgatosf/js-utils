@@ -10,6 +10,16 @@
         "test:watch": "vitest --typecheck",
         "type:check": "tsc --project tsconfig.test.json"
     },
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        },
+        "./messaging": {
+            "types": "./dist/messaging/index.d.ts",
+            "default": "./dist/messaging/index.js"
+        }
+    },
     "prettier": "@elgato/prettier-config",
     "repository": {
         "type": "git",
