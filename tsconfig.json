@@ -1,9 +1,7 @@
 {
     "extends": "@tsconfig/node20/tsconfig.json",
     "compilerOptions": {
-        "declaration": true,
         "erasableSyntaxOnly": true,
-        "outDir": "dist",
         "lib": [
             "es2022",
             "esnext.disposable"
