@@ -9,12 +9,12 @@
             "esnext.disposable"
         ],
         "module": "NodeNext",
+        "noEmit": true,
         "noImplicitOverride": true,
         "verbatimModuleSyntax": true
     },
     "exclude": [
         "./dist/",
-        "./node_modules/",
-        "./src/**/__tests__/"
+        "./node_modules/"
     ]
 }
