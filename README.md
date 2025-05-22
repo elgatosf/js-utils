@@ -2,7 +2,7 @@
 
 # @elgato/utils
 
-Utility classes and functions used throughout the Elgato ecosystem.
+Utilities used throughout the Elgato ecosystem.
 
 [![@elgato/utils npm package](https://img.shields.io/npm/v/%40elgato/utils?logo=npm&logoColor=white)](https://www.npmjs.com/package/@elgato/utils)
 [![Elgato homepage](https://img.shields.io/badge/Elgato-3431cf?labelColor=grey&logo=Elgato)](https://elgato.com)
