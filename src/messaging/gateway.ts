@@ -295,7 +295,7 @@ export type OutboundMessageProxy = (payload: JsonValue) => Promise<boolean> | bo
 
 /**
  * Message request, received from the client.
- * @template TAction The type of the action that sent the request.
+ * @template TContext Context of the request.
  * @template TBody The type of the request body.
  */
 export type UnscopedMessageRequest<TContext, TBody extends JsonValue = JsonValue> = Omit<
@@ -324,23 +324,23 @@ export type UnscopedMessageHandler<TContext, TBody extends JsonValue = JsonValue
 /**
  * Configuration that defines the route.
  */
-export type RouteConfiguration<TAction> = {
+export type RouteConfiguration<TContext> = {
 	/**
 	 * Optional filter used to determine if a message can be routed; when `true`, the route handler will be called.
-	 * @param action Action associated with the message.
+	 * @param context Context associated with the message.
 	 * @returns Should return `true` when the request can be handled; otherwise `false`.
 	 */
-	filter?: (source: TAction) => boolean;
+	filter?: (source: TContext) => boolean;
 };
 
 /**
  * Event arguments provided to the internal handler for a route.
  */
-type InternalRouteHandlerEventArgs<TAction, TBody extends JsonValue = JsonValue> = {
+type InternalRouteHandlerEventArgs<TContext, TBody extends JsonValue = JsonValue> = {
 	/**
 	 * Request received from the client.
 	 */
-	request: UnscopedMessageRequest<TAction, TBody>;
+	request: UnscopedMessageRequest<TContext, TBody>;
 
 	/**
 	 * Responder capable of sending a response to the client.

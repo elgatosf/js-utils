@@ -6,7 +6,7 @@ import type { RawMessageRequest } from "../message.js";
 import { MessageResponder } from "../responder.js";
 
 describe("MessageGateway", () => {
-	it("must provide sender action", async () => {
+	it("must provide sender context", async () => {
 		// Arrange.
 		const proxy = vi.fn();
 		const context = {
@@ -53,9 +53,10 @@ describe("MessageGateway", () => {
 		const gateway = new MessageGateway<object>(proxy);
 
 		// Act.
-		await gateway.process(true, vi.fn());
+		const result = await gateway.process(true, vi.fn());
 
 		// Assert.
+		expect(result).toBe(false);
 		expect(proxy).toHaveBeenCalledTimes(0);
 	});
 
@@ -74,28 +75,6 @@ describe("MessageGateway", () => {
 				path: "/",
 				unidirectional: false,
 			} satisfies RawMessageRequest,
-			vi.fn(),
-		);
-
-		// Assert.
-		expect(result).toBe(false);
-	});
-
-	/**
-	 * Asserts {@link MessageGateway} returns `false` that aren't requests.
-	 */
-	it("returns false for payloads that aren't requests", async () => {
-		// Arrange.
-		const gateway = new MessageGateway<object>(vi.fn());
-
-		// Act.
-		const result = await gateway.process(
-			{
-				action: "com.elgato.test.one",
-				context: "abc123",
-				event: "sendToPlugin",
-				payload: true,
-			},
 			vi.fn(),
 		);
 
