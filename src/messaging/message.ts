@@ -1,20 +1,23 @@
 import type { JsonValue } from "../json.js";
+import { has } from "../objects.js";
+import type { ClientRequestMessage } from "./client.js";
+import type { ServerResponseMessage } from "./server.js";
 
 /**
- * Determines whether the specified {@link value} is a {@link RawMessageResponse}.
+ * Determines whether the specified value is a request from a client.
  * @param value Value.
- * @returns `true` when the value of a {@link RawMessageResponse}; otherwise `false`.
+ * @returns `true` when the value is a request; otherwise `false`.
  */
-export function isRequest(value: unknown): value is RawMessageRequest {
+export function isRequest(value: unknown): value is ClientRequestMessage {
 	return isMessage(value, "request") && has(value, "unidirectional", "boolean");
 }
 
 /**
- * Determines whether the specified {@link value} is a {@link RawMessageResponse}.
+ * Determines whether the specified value is a response from a server.
  * @param value Value.
- * @returns `true` when the value of a {@link RawMessageResponse; otherwise `false`.
+ * @returns `true` when the value is a response; otherwise `false`.
  */
-export function isResponse(value: unknown): value is RawMessageResponse {
+export function isResponse(value: unknown): value is ServerResponseMessage {
 	return isMessage(value, "response") && has(value, "status", "number");
 }
 
@@ -24,7 +27,7 @@ export function isResponse(value: unknown): value is RawMessageResponse {
  * @param type Message type.
  * @returns `true` when the value of a {@link Message} of type {@link type}; otherwise `false`.
  */
-function isMessage<T extends MessageType>(value: unknown, type: T): value is Message<T> {
+function isMessage<T extends MessageType>(value: unknown, type: T): value is Message<T, JsonValue> {
 	// The value should be an object.
 	if (value === undefined || value === null || typeof value !== "object") {
 		return false;
@@ -40,29 +43,18 @@ function isMessage<T extends MessageType>(value: unknown, type: T): value is Mes
 }
 
 /**
- * Determines whether the specified {@link key} exists in {@link obj}, and is typeof {@link type}.
- * @param obj Object to check.
- * @param key key to check for.
- * @param type Expected type.
- * @returns `true` when the {@link key} exists in the {@link obj}, and is typeof {@link type}.
- */
-function has(obj: object, key: string, type: "boolean" | "number" | "string"): boolean {
-	return key in obj && typeof obj[key as keyof typeof obj] === type;
-}
-
-/**
  * A message sent between the plugin and the property inspector.
  */
-type Message<T extends MessageType> = {
+export type Message<TType extends MessageType, TBody extends JsonValue> = {
 	/**
 	 * Identifies the object as a request or a response.
 	 */
-	readonly __type: T;
+	readonly __type: TType;
 
 	/**
 	 * Contents of the message.
 	 */
-	readonly body?: JsonValue;
+	readonly body?: TBody;
 
 	/**
 	 * Unique identifier associated with message.
@@ -79,32 +71,6 @@ type Message<T extends MessageType> = {
  * Identifies the message type.
  */
 type MessageType = "request" | "response";
-
-/**
- * A message request sent from the client.
- */
-export type RawMessageRequest = Message<"request"> & {
-	/**
-	 * Indicates whether the request is unidirectional; when `true`, a response will not be awaited.
-	 */
-	readonly unidirectional: boolean;
-};
-
-/**
- * A message response sent from the server.
- */
-export type RawMessageResponse = Message<"response"> & {
-	/**
-	 * Code that indicates the response status.
-	 * - `200` the request was successful.
-	 * - `202` the request was unidirectional, and does not have a response.
-	 * - `406` the request could not be accepted by the server.
-	 * - `408` the request timed-out.
-	 * - `500` the request failed.
-	 * - `501` the request is not implemented by the server, and could not be fulfilled.
-	 */
-	readonly status: StatusCode;
-};
 
 /**
  * Status code of a response.

@@ -1,13 +1,3 @@
-declare global {
-	interface PromiseConstructor {
-		/**
-		 * Returns an object that contains a promise and two functions to resolve or reject it.
-		 * @returns The promise, and the resolve and reject functions.
-		 */
-		withResolvers<T = void>(): PromiseResolvers<T>;
-	}
-}
-
 /**
  * An object that contains a promise, and its resolve and reject functions.
  */
@@ -30,7 +20,11 @@ export type PromiseResolvers<T> = {
 	reject(reason?: unknown): void;
 };
 
-Promise.withResolvers ??= <T = void>(): PromiseResolvers<T> => {
+/**
+ * Returns an object that contains a promise and two functions to resolve or reject it.
+ * @returns The promise, and the resolve and reject functions.
+ */
+export function withResolvers<T = void>(): PromiseResolvers<T> {
 	let resolve!: (value: PromiseLike<T> | T) => void;
 	let reject!: (reason?: unknown) => void;
 
@@ -40,4 +34,4 @@ Promise.withResolvers ??= <T = void>(): PromiseResolvers<T> => {
 	});
 
 	return { promise, resolve, reject };
-};
+}

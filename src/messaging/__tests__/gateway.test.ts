@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { JsonValue } from "../../json.js";
-import { MessageGateway, type UnscopedMessageRequest } from "../gateway.js";
-import type { RawMessageRequest } from "../message.js";
+import type { ClientRequestMessage } from "../client.js";
+import { MessageGateway } from "../gateway.js";
 import { MessageResponder } from "../responder.js";
+import { Request } from "../server.js";
 
 describe("MessageGateway", () => {
 	it("must provide sender context", async () => {
@@ -16,32 +17,22 @@ describe("MessageGateway", () => {
 		const gateway = new MessageGateway<typeof context>(proxy);
 		gateway.route("/test", handler);
 
-		// Act.
-		await gateway.process(
-			{
-				__type: "request",
-				id: "req1",
-				path: "/test",
-				unidirectional: false,
-				body: {
-					name: "Elgato",
-				},
-			} satisfies RawMessageRequest,
-			() => context,
-		);
-
-		expect(handler).toHaveBeenCalledTimes(1);
-		expect(handler).toHaveBeenCalledWith<[UnscopedMessageRequest<typeof context>, MessageResponder]>(
-			{
-				context,
-				path: "/test",
-				unidirectional: false,
-				body: {
-					name: "Elgato",
-				},
+		const msg: ClientRequestMessage = {
+			__type: "request",
+			id: "req1",
+			path: "/test",
+			unidirectional: false,
+			body: {
+				name: "Elgato",
 			},
-			expect.any(MessageResponder),
-		);
+		};
+
+		// Act.
+		await gateway.process(msg, () => context);
+
+		// Assert.
+		expect(handler).toHaveBeenCalledTimes(1);
+		expect(handler).toHaveBeenCalledWith(new Request(msg, context), expect.any(MessageResponder));
 	});
 
 	/**
@@ -74,7 +65,7 @@ describe("MessageGateway", () => {
 				id: "abc123",
 				path: "/",
 				unidirectional: false,
-			} satisfies RawMessageRequest,
+			} satisfies ClientRequestMessage,
 			vi.fn(),
 		);
 
@@ -111,7 +102,7 @@ describe("MessageGateway", () => {
 				body: {
 					name: "Elgato",
 				},
-			} satisfies RawMessageRequest,
+			} satisfies ClientRequestMessage,
 			vi.fn(),
 		);
 
@@ -149,7 +140,7 @@ describe("MessageGateway", () => {
 			id: "12345",
 			path: "/test",
 			unidirectional: false,
-		} satisfies RawMessageRequest;
+		} satisfies ClientRequestMessage;
 
 		const disposable = gateway.route("/test", listener);
 

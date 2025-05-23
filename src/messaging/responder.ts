@@ -1,6 +1,7 @@
 import type { JsonValue } from "../json.js";
 import type { OutboundMessageProxy } from "./gateway.js";
-import type { RawMessageRequest, RawMessageResponse, StatusCode } from "./message.js";
+import type { RawMessageRequest, StatusCode } from "./message.js";
+import type { ServerResponseMessage } from "./server.js";
 
 /**
  * Message responder responsible for responding to a request.
@@ -62,7 +63,7 @@ export class MessageResponder {
 				path: this.#request.path,
 				body,
 				status,
-			} satisfies RawMessageResponse);
+			} satisfies ServerResponseMessage);
 
 			this.#responded = true;
 		}
