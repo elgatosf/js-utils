@@ -1,4 +1,4 @@
-import { type PromiseResolvers } from "./promises.js";
+import { type PromiseResolvers, withResolvers } from "./promises.js";
 
 /**
  * Creates a wrapper around the specified `fn`, debouncing calls within the `delay`, to prevent multiple calls.
@@ -16,7 +16,7 @@ export function debounce<T extends unknown[]>(
 	return (...args: T): Promise<void> => {
 		clearTimeout(handle);
 
-		resolvers ??= Promise.withResolvers();
+		resolvers ??= withResolvers();
 		handle = setTimeout(
 			async (args) => {
 				const capturedResolvers = resolvers;
