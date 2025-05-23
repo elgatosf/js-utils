@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { RawMessageResponse } from "../message.js";
 import { MessageResponder } from "../responder.js";
+import type { ServerResponseMessage } from "../server.js";
 
 describe("MessageResponder", () => {
 	/**
@@ -25,7 +25,7 @@ describe("MessageResponder", () => {
 
 		// Assert.
 		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenLastCalledWith<[RawMessageResponse]>({
+		expect(proxy).toHaveBeenLastCalledWith<[ServerResponseMessage]>({
 			__type: "response",
 			id: "abc123",
 			path: "/pets",
@@ -58,7 +58,7 @@ describe("MessageResponder", () => {
 
 		// Assert.
 		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenLastCalledWith<[RawMessageResponse]>({
+		expect(proxy).toHaveBeenLastCalledWith<[ServerResponseMessage]>({
 			__type: "response",
 			id: "abc123",
 			path: "/toggle-light",
@@ -88,7 +88,7 @@ describe("MessageResponder", () => {
 
 		// Assert.
 		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenLastCalledWith<[RawMessageResponse]>({
+		expect(proxy).toHaveBeenLastCalledWith<[ServerResponseMessage]>({
 			__type: "response",
 			id: "abc123",
 			path: "/mute-mic",
@@ -117,7 +117,7 @@ describe("MessageResponder", () => {
 
 		// Assert.
 		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenLastCalledWith<[RawMessageResponse]>({
+		expect(proxy).toHaveBeenLastCalledWith<[ServerResponseMessage]>({
 			__type: "response",
 			id: "abc123",
 			path: "/test",
@@ -150,7 +150,7 @@ describe("MessageResponder", () => {
 
 		// Assert.
 		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenLastCalledWith<[RawMessageResponse]>({
+		expect(proxy).toHaveBeenLastCalledWith<[ServerResponseMessage]>({
 			__type: "response",
 			id: "abc123",
 			path: "/test",

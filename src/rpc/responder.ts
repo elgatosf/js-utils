@@ -1,6 +1,7 @@
 import type { JsonValue } from "../json.js";
+import type { ClientRequestMessage } from "./client.js";
 import type { OutboundMessageProxy } from "./gateway.js";
-import type { RawMessageRequest, StatusCode } from "./message.js";
+import type { StatusCode } from "./message.js";
 import type { ServerResponseMessage } from "./server.js";
 
 /**
@@ -15,7 +16,7 @@ export class MessageResponder {
 	/**
 	 * The request the response is associated with.
 	 */
-	readonly #request: RawMessageRequest;
+	readonly #request: ClientRequestMessage;
 
 	/**
 	 * Indicates whether a response has already been sent in relation to the response.
@@ -27,7 +28,7 @@ export class MessageResponder {
 	 * @param request The request the response is associated with.
 	 * @param proxy Proxy responsible for forwarding the response to the client.
 	 */
-	constructor(request: RawMessageRequest, proxy: OutboundMessageProxy) {
+	constructor(request: ClientRequestMessage, proxy: OutboundMessageProxy) {
 		this.#request = request;
 		this.#proxy = proxy;
 	}

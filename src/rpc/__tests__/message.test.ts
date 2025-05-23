@@ -1,6 +1,8 @@
 import { describe, expect, test } from "vitest";
 
-import { isRequest, isResponse, type RawMessageRequest, type RawMessageResponse } from "../message.js";
+import type { ClientRequestMessage } from "../client.js";
+import { isRequest, isResponse } from "../message.js";
+import type { ServerResponseMessage } from "../server.js";
 
 describe("isRequest", () => {
 	const request = {
@@ -8,7 +10,7 @@ describe("isRequest", () => {
 		id: "abc123",
 		path: "/test",
 		unidirectional: false,
-	} satisfies RawMessageRequest;
+	} satisfies ClientRequestMessage;
 
 	/**
 	 * Asserts a valid structures.
@@ -108,7 +110,7 @@ describe("isResponse", () => {
 		id: "abc123",
 		path: "/test",
 		status: 200,
-	} satisfies RawMessageResponse;
+	} satisfies ServerResponseMessage;
 
 	/**
 	 * Asserts a valid structures.

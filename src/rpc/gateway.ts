@@ -12,8 +12,7 @@ const DEFAULT_REQUEST_OPTIONS = {
 };
 
 /**
- * Provides a gateway between to entities that are capable of sending and receiving messages in the
- * as requests and responses.
+ * Provides a gateway between to clients and a server, enabling them to send/receive requests/responses.
  */
 export class MessageGateway<TContext> {
 	/**
