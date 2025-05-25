@@ -8,11 +8,11 @@ import { type RouteConfiguration, type RouteHandler, Server } from "./server.js"
 /**
  * Provides a gateway between to clients and a server, enabling them to send/receive requests/responses.
  */
-export class MessageGateway<TContext> {
+export class MessageGateway {
 	/**
 	 * Server responsible for processing requests, and returning responses.
 	 */
-	readonly #server: Server<TContext>;
+	readonly #server: Server;
 
 	/**
 	 * Client response for sending requests, and processing responses.
@@ -31,14 +31,15 @@ export class MessageGateway<TContext> {
 	/**
 	 * Attempts to process the specified message.
 	 * @param message Message to process.
+	 * @param contextProvider Optional context provider, provided to route handlers when responding to requests.
 	 * @returns `true` when the message was successfully processed; otherwise `false`.
 	 */
-	public async receive(message: JsonValue): Promise<boolean> {
+	public async receive<TContext = unknown>(message: JsonValue, contextProvider?: () => TContext): Promise<boolean> {
 		if (await this.#client.receive(message)) {
 			return true;
 		}
 
-		if (await this.#server.receive(message)) {
+		if (await this.#server.receive(message, contextProvider)) {
 			return true;
 		}
 
@@ -50,15 +51,14 @@ export class MessageGateway<TContext> {
 	 * @param path Path used to identify the route.
 	 * @param handler Handler to be invoked when the request is received.
 	 * @param options Optional routing configuration.
-	 * @template TBody Type of the request's body.
 	 * @returns Disposable capable of removing the route handler.
 	 */
-	public route<TBody extends JsonValue = JsonValue>(
+	public route<TBody extends JsonValue = JsonValue, TContext = undefined>(
 		path: string,
-		handler: RouteHandler<TBody>,
+		handler: RouteHandler<TBody, TContext>,
 		options?: RouteConfiguration<TContext>,
 	): IDisposable {
-		return this.#server.route(path, handler, options);
+		return this.#server.route<TBody, TContext>(path, handler, options);
 	}
 
 	/**

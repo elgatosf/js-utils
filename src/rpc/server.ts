@@ -8,7 +8,7 @@ import { MessageResponder } from "./responder.js";
 /**
  * Server capable of receiving message requests from, and processing responses to, a client.
  */
-export class Server<TContext> {
+export class Server {
 	/**
 	 * Proxy responsible for sending messages to the server.
 	 */
@@ -30,12 +30,14 @@ export class Server<TContext> {
 	/**
 	 * Attempts to process the specified message received from the client.
 	 * @param message Message to process.
+	 * @param contextProvider Optional context provider, provided to route handlers when responding to requests.
 	 * @returns `true` when the server was able to process the message; otherwise `false`.
 	 */
-	public async receive(message: JsonValue): Promise<boolean> {
+	public async receive<TContext = undefined>(message: JsonValue, contextProvider?: () => TContext): Promise<boolean> {
 		const request = Request.parse(message);
 		if (request !== undefined) {
-			if (await this.#routeRequest(request)) {
+			contextProvider ??= (): TContext => undefined!;
+			if (await this.#routeRequest(request, contextProvider)) {
 				return true;
 			}
 		}
@@ -48,51 +50,58 @@ export class Server<TContext> {
 	 * @param path Path used to identify the route.
 	 * @param handler Handler to be invoked when the request is received.
 	 * @param options Optional routing configuration.
-	 * @template TBody Type of the request's body.
 	 * @returns Disposable capable of removing the route handler.
 	 */
-	public route<TBody extends JsonValue = JsonValue>(
+	public route<TBody extends JsonValue = JsonValue, TContext = undefined>(
 		path: string,
-		handler: RouteHandler<TBody>,
+		handler: RouteHandler<TBody, TContext>,
 		options?: RouteConfiguration<TContext>,
 	): IDisposable {
 		options = { filter: (): boolean => true, ...options };
 
-		return this.#routes.disposableOn(path, async ({ request, responder, resolve }: RouteResolver<TBody>) => {
-			// TODO: Reintroduce context
-			if (options?.filter /*&& options.filter(request.context)*/) {
-				await resolve();
+		return this.#routes.disposableOn(
+			path,
+			async ({ context, request, responder, resolve }: RouteResolver<TBody, TContext>) => {
+				if (options?.filter && options.filter(context)) {
+					await resolve();
 
-				try {
-					// Invoke the handler; when data was returned, propagate it as part of the response (if there wasn't already a response).
-					const result = await handler(request, responder);
-					if (result !== undefined) {
-						await responder.send(200, result);
+					try {
+						// Invoke the handler; when data was returned, propagate it as part of the response (if there wasn't already a response).
+						const result = await handler(request, responder, context);
+						if (result !== undefined) {
+							await responder.send(200, result);
+						}
+					} catch (err) {
+						// Respond with an error before throwing.
+						await responder.send(500);
+						throw err;
 					}
-				} catch (err) {
-					// Respond with an error before throwing.
-					await responder.send(500);
-					throw err;
 				}
-			}
-		});
+			},
+		);
 	}
 
 	/**
 	 * Handles inbound requests.
 	 * @param request The request.
+	 * @param contextProvider Optional context provider, provided to route handlers when responding to requests.
 	 * @template TBody Type of the request's body.
 	 * @returns `true` when the request was handled; otherwise `false`.
 	 */
-	async #routeRequest<TBody extends JsonValue>(request: Request<TBody>): Promise<boolean> {
+	async #routeRequest<TBody extends JsonValue, TContext>(
+		request: Request<TBody>,
+		contextProvider: () => TContext,
+	): Promise<boolean> {
 		const responder = new MessageResponder(request, this.#proxy);
 
 		// Get handlers of the path, and invoke them; filtering is applied by the handlers themselves
 		let resolved = false;
-		const routes = this.#routes.listeners(request.path) as ((ev: RouteResolver<TBody>) => Promise<void>)[];
+		const routes = this.#routes.listeners(request.path) as ((ev: RouteResolver<TBody, TContext>) => Promise<void>)[];
+		const context = contextProvider();
 
 		for (const route of routes) {
 			await route({
+				context,
 				request,
 				responder,
 				resolve: async (): Promise<void> => {
@@ -132,18 +141,24 @@ export type RouteConfiguration<TContext> = {
 
 /**
  * Function responsible for handling a request, and providing a response.
- * @template TContext Type of the context associated with the request.
  * @template TBody Type of the request's body.
+ * @template TContext Type of the context provided to the route handler.
  */
-export type RouteHandler<TBody extends JsonValue = JsonValue> = (
+export type RouteHandler<TBody extends JsonValue = JsonValue, TContext = undefined> = (
 	request: Request<TBody>,
 	responder: MessageResponder<TBody>,
+	context: TContext,
 ) => JsonValue | Promise<JsonValue | void> | void;
 
 /**
  * Contains information about a request, and the ability to resolve it.
  */
-type RouteResolver<TBody extends JsonValue> = {
+type RouteResolver<TBody extends JsonValue, TContext> = {
+	/**
+	 * Context provided to the route handler when receiving a message.
+	 */
+	context: TContext;
+
 	/**
 	 * The request.
 	 */

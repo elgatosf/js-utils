@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MessageGateway } from "../gateway.js";
 import { Request } from "../request.js";
+import { MessageResponder } from "../responder.js";
 
 describe("MessageGateway", () => {
 	/**
@@ -10,7 +11,7 @@ describe("MessageGateway", () => {
 	it("must not process unknown payloads", async () => {
 		// Arrange.
 		const proxy = vi.fn();
-		const gateway = new MessageGateway<object>(proxy);
+		const gateway = new MessageGateway(proxy);
 
 		// Act.
 		const result = await gateway.receive(true);
@@ -25,7 +26,7 @@ describe("MessageGateway", () => {
 	 */
 	it("returns false unknown routes", async () => {
 		// Arrange.
-		const gateway = new MessageGateway<object>(vi.fn());
+		const gateway = new MessageGateway(vi.fn());
 		const msg = new Request({ path: "abc123" });
 
 		// Act.
@@ -41,7 +42,7 @@ describe("MessageGateway", () => {
 	it("must execute handlers in order", async () => {
 		// Arrange
 		const proxy = vi.fn();
-		const gateway = new MessageGateway<object>(proxy);
+		const gateway = new MessageGateway(proxy);
 		const order: string[] = [];
 		const handlers = [
 			() => {
@@ -74,7 +75,7 @@ describe("MessageGateway", () => {
 	it("must return 406 when the payload could not be sent to the server", async () => {
 		// Arrange.
 		const proxy = vi.fn().mockReturnValue(false);
-		const gateway = new MessageGateway<object>(proxy);
+		const gateway = new MessageGateway(proxy);
 
 		// Act.
 		const res = await gateway.send("/");
@@ -92,7 +93,7 @@ describe("MessageGateway", () => {
 		// Arrange.
 		const proxy = vi.fn();
 		const listener = vi.fn();
-		const gateway = new MessageGateway<object>(proxy);
+		const gateway = new MessageGateway(proxy);
 		const req = new Request({
 			path: "/test",
 		});
@@ -109,9 +110,30 @@ describe("MessageGateway", () => {
 		expect(listener).toHaveBeenCalledTimes(1); // Should still be 1.
 	});
 
+	/**
+	 * Asserts context can be provided to routed messages.
+	 */
+	it("provides context to route", async () => {
+		// Arrange.
+		const proxy = vi.fn();
+		const listener = vi.fn();
+		const gateway = new MessageGateway(proxy);
+		const req = new Request({
+			path: "/context",
+		});
+
+		// Act.
+		gateway.route("/context", listener);
+		await gateway.receive(req.toJSON(), () => "Context");
+
+		// Assert.
+		expect(listener).toHaveBeenCalledTimes(1);
+		expect(listener).toHaveBeenCalledWith(expect.any(Request), expect.any(MessageResponder), "Context");
+	});
+
 	describe("fetch e2e", () => {
-		let client!: MessageGateway<object>;
-		let server!: MessageGateway<object>;
+		let client!: MessageGateway;
+		let server!: MessageGateway;
 		let cascade!: (message: string) => void;
 
 		beforeEach(() => {
@@ -119,7 +141,7 @@ describe("MessageGateway", () => {
 
 			client = new MessageGateway(async (value) => {
 				try {
-					await server.receive(JSON.parse(JSON.stringify(value)));
+					await server.receive(JSON.parse(JSON.stringify(value)), () => "Context");
 				} catch (err) {
 					// SafeError is acceptable as it is used for "/error"
 					if (!(err instanceof SafeError)) {
@@ -130,7 +152,7 @@ describe("MessageGateway", () => {
 				return true;
 			});
 
-			server = new MessageGateway<object>(async (value) => {
+			server = new MessageGateway(async (value) => {
 				await client.receive(JSON.parse(JSON.stringify(value)));
 				return true;
 			});
