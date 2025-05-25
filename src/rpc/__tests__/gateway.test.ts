@@ -5,7 +5,7 @@ import { Request } from "../request.js";
 
 describe("MessageGateway", () => {
 	/**
-	 * Asserts {@link MessageGateway.process} correctly handles unexpected data structures.
+	 * Asserts {@link MessageGateway.receive} correctly handles unexpected data structures.
 	 */
 	it("must not process unknown payloads", async () => {
 		// Arrange.
@@ -13,7 +13,7 @@ describe("MessageGateway", () => {
 		const gateway = new MessageGateway<object>(proxy);
 
 		// Act.
-		const result = await gateway.process(true);
+		const result = await gateway.receive(true);
 
 		// Assert.
 		expect(result).toBe(false);
@@ -29,7 +29,7 @@ describe("MessageGateway", () => {
 		const msg = new Request({ path: "abc123" });
 
 		// Act.
-		const result = await gateway.process(msg.toJSON());
+		const result = await gateway.receive(msg.toJSON());
 
 		// Assert.
 		expect(result).toBe(false);
@@ -62,7 +62,7 @@ describe("MessageGateway", () => {
 			},
 		});
 
-		await gateway.process(req.toJSON());
+		await gateway.receive(req.toJSON());
 
 		// Assert
 		expect(order).toEqual(["First", "Second"]);
@@ -77,7 +77,7 @@ describe("MessageGateway", () => {
 		const gateway = new MessageGateway<object>(proxy);
 
 		// Act.
-		const res = await gateway.fetch("/");
+		const res = await gateway.send("/");
 
 		// Assert.
 		expect(res.status).toBe(406);
@@ -100,12 +100,12 @@ describe("MessageGateway", () => {
 		const disposable = gateway.route("/test", listener);
 
 		// Act, assert.
-		await gateway.process(req.toJSON());
+		await gateway.receive(req.toJSON());
 		expect(listener).toHaveBeenCalledTimes(1);
 
 		// Act, assert (dispose).
 		disposable.dispose();
-		await gateway.process(req.toJSON());
+		await gateway.receive(req.toJSON());
 		expect(listener).toHaveBeenCalledTimes(1); // Should still be 1.
 	});
 
@@ -119,7 +119,7 @@ describe("MessageGateway", () => {
 
 			client = new MessageGateway(async (value) => {
 				try {
-					await server.process(JSON.parse(JSON.stringify(value)));
+					await server.receive(JSON.parse(JSON.stringify(value)));
 				} catch (err) {
 					// SafeError is acceptable as it is used for "/error"
 					if (!(err instanceof SafeError)) {
@@ -131,7 +131,7 @@ describe("MessageGateway", () => {
 			});
 
 			server = new MessageGateway<object>(async (value) => {
-				await client.process(JSON.parse(JSON.stringify(value)));
+				await client.receive(JSON.parse(JSON.stringify(value)));
 				return true;
 			});
 
@@ -171,7 +171,7 @@ describe("MessageGateway", () => {
 			 */
 			it("200 on success", async () => {
 				// Arrange, act.
-				const { body, ok, status } = await client.fetch<MockData>("/test");
+				const { body, ok, status } = await client.send<MockData>("/test");
 
 				// Assert.
 				expect(status).toBe(200);
@@ -184,7 +184,7 @@ describe("MessageGateway", () => {
 			 */
 			it("202 on unidirectional request", async () => {
 				// Arrange, act.
-				const { body, ok, status } = await client.fetch({
+				const { body, ok, status } = await client.send({
 					path: "/test",
 					unidirectional: true,
 				});
@@ -200,7 +200,7 @@ describe("MessageGateway", () => {
 			 */
 			it("data with promise result", async () => {
 				// Arrange, act.
-				const { body, ok, status } = await client.fetch<MockData>("/async");
+				const { body, ok, status } = await client.send<MockData>("/async");
 
 				// Assert.
 				expect(status).toBe(200);
@@ -213,7 +213,7 @@ describe("MessageGateway", () => {
 			 */
 			it("500 on error", async () => {
 				// Arrange, act.
-				const { body, ok, status } = await client.fetch("/error");
+				const { body, ok, status } = await client.send("/error");
 
 				// Assert.
 				expect(status).toBe(500);
@@ -226,7 +226,7 @@ describe("MessageGateway", () => {
 			 */
 			it("202 on error (unidirectional request)", async () => {
 				// Arrange, act.
-				const { body, ok, status } = await client.fetch({
+				const { body, ok, status } = await client.send({
 					path: "/error",
 					unidirectional: true,
 				});
@@ -247,7 +247,7 @@ describe("MessageGateway", () => {
 				const spyOnClearTimeout = vi.spyOn(global, "clearTimeout");
 
 				// Act.
-				const res = client.fetch({
+				const res = client.send({
 					path: "/test",
 					timeout: 1,
 				});
@@ -272,7 +272,7 @@ describe("MessageGateway", () => {
 			 */
 			it("501 on unknown routes", async () => {
 				// Arrange, act.
-				const { body, ok, status } = await client.fetch("/unknown");
+				const { body, ok, status } = await client.send("/unknown");
 
 				// Assert.
 				expect(status).toBe(501);
@@ -285,7 +285,7 @@ describe("MessageGateway", () => {
 			 */
 			it("501 on unknown routes (unidirectional request)", async () => {
 				// Arrange, act.
-				const { body, ok, status } = await client.fetch({
+				const { body, ok, status } = await client.send({
 					path: "/unknown",
 					unidirectional: true,
 				});
@@ -298,11 +298,11 @@ describe("MessageGateway", () => {
 		});
 
 		/**
-		 * Asserts {@link MessageGateway.fetch} executes all paths, but does not respond more than once.
+		 * Asserts {@link MessageGateway.send} executes all paths, but does not respond more than once.
 		 */
 		it("should execute all, but return after the first", async () => {
 			// Arrange, act.
-			const { body, ok, status } = await client.fetch("/cascade");
+			const { body, ok, status } = await client.send("/cascade");
 
 			// Assert.
 			expect(status).toBe(200);
