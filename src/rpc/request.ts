@@ -2,11 +2,13 @@ import { z } from "zod/v4-mini";
 
 import type { JsonObject, JsonValue } from "../json.js";
 
+const TYPE_ID = "request";
+
 /**
  * Schema of a request.
  */
 const schema = z.object({
-	__type: z.literal("request"),
+	__type: z.literal(TYPE_ID),
 	id: z.string(),
 	path: z.string(),
 	body: z.optional(z.any()),
@@ -15,9 +17,9 @@ const schema = z.object({
 });
 
 /**
- * Request received from a client.
+ * Provides information for an RPC request.
  */
-export class Request<TBody extends JsonValue> implements z.infer<typeof schema> {
+export class Request<TBody extends JsonValue> {
 	/**
 	 * Private backing field for {@link Request.id}.
 	 */
@@ -34,14 +36,6 @@ export class Request<TBody extends JsonValue> implements z.infer<typeof schema> 
 	 */
 	constructor(options: RequestOptions<TBody>) {
 		this.#options = options;
-	}
-
-	/**
-	 * Gets the object type.
-	 * @returns The type.
-	 */
-	public get __type(): "request" {
-		return "request";
 	}
 
 	/**
@@ -105,7 +99,7 @@ export class Request<TBody extends JsonValue> implements z.infer<typeof schema> 
 	 */
 	public toJSON(): JsonObject {
 		const { id, path, body, timeout, unidirectional } = this;
-		return { __type: "request", id, path, body, timeout, unidirectional } satisfies z.infer<typeof schema>;
+		return { __type: TYPE_ID, id, path, body, timeout, unidirectional } satisfies z.infer<typeof schema>;
 	}
 }
 

@@ -1,7 +1,8 @@
 import type { IDisposable } from "../disposable.js";
 import type { JsonValue } from "../json.js";
-import { Client, Response } from "./client.js";
+import { Client } from "./client.js";
 import { Request, type RequestOptions } from "./request.js";
+import { Response } from "./response.js";
 import { type RouteConfiguration, type RouteHandler, Server } from "./server.js";
 
 /**
@@ -106,4 +107,6 @@ export class MessageGateway<TContext> {
  * @param payload Payload to be sent to the server.
  * @returns `true` when the server was able to accept the response; otherwise `false`.
  */
-export type OutboundMessageProxy = (payload: JsonValue | Request<JsonValue | undefined>) => Promise<boolean> | boolean;
+export type OutboundMessageProxy = (
+	payload: Request<JsonValue | undefined> | Response<JsonValue | undefined>,
+) => Promise<boolean> | boolean;

@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { JsonValue } from "../../json.js";
 import { MessageGateway } from "../gateway.js";
 import { Request } from "../request.js";
 
@@ -120,7 +119,7 @@ describe("MessageGateway", () => {
 
 			client = new MessageGateway(async (value) => {
 				try {
-					await server.process(value as JsonValue);
+					await server.process(JSON.parse(JSON.stringify(value)));
 				} catch (err) {
 					// SafeError is acceptable as it is used for "/error"
 					if (!(err instanceof SafeError)) {
@@ -132,7 +131,7 @@ describe("MessageGateway", () => {
 			});
 
 			server = new MessageGateway<object>(async (value) => {
-				await client.process(value as JsonValue);
+				await client.process(JSON.parse(JSON.stringify(value)));
 				return true;
 			});
 

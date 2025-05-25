@@ -2,7 +2,6 @@ import type { IDisposable } from "../disposable.js";
 import { EventEmitter } from "../event-emitter.js";
 import type { JsonValue } from "../json.js";
 import type { OutboundMessageProxy } from "./gateway.js";
-import { type Message, type StatusCode } from "./message.js";
 import { Request } from "./request.js";
 import { MessageResponder } from "./responder.js";
 
@@ -159,20 +158,4 @@ type RouteResolver<TBody extends JsonValue> = {
 	 * Resolves the request, marking it as fulfilled.
 	 */
 	resolve(): Promise<void>;
-};
-
-/**
- * Response message sent from the server.
- */
-export type ServerResponseMessage = Message<"response", JsonValue> & {
-	/**
-	 * Code that indicates the response status.
-	 * - `200` the request was successful.
-	 * - `202` the request was unidirectional, and does not have a response.
-	 * - `406` the request could not be accepted by the server.
-	 * - `408` the request timed-out.
-	 * - `500` the request failed.
-	 * - `501` the request is not implemented by the server, and could not be fulfilled.
-	 */
-	readonly status: StatusCode;
 };

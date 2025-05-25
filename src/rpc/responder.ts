@@ -1,8 +1,8 @@
 import type { JsonValue } from "../json.js";
 import type { OutboundMessageProxy } from "./gateway.js";
-import type { StatusCode } from "./message.js";
 import type { Request } from "./request.js";
-import type { ServerResponseMessage } from "./server.js";
+import { Response } from "./response.js";
+import type { StatusCode } from "./status.js";
 
 /**
  * Message responder responsible for responding to a request.
@@ -58,14 +58,9 @@ export class MessageResponder<TBody extends JsonValue> {
 	 */
 	public async send(status: StatusCode, body?: JsonValue): Promise<void> {
 		if (this.canRespond) {
-			await this.#proxy({
-				__type: "response",
-				id: this.#request.id,
-				path: this.#request.path,
-				body,
-				status,
-			} satisfies ServerResponseMessage);
+			const res = new Response(this.#request.id, this.#request.path, status, body);
 
+			await this.#proxy(res);
 			this.#responded = true;
 		}
 	}

@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { JsonValue } from "../../json.js";
+import { Request } from "../request.js";
 import { MessageResponder } from "../responder.js";
-import type { ServerResponseMessage } from "../server.js";
+import { Response } from "../response.js";
 
 describe("MessageResponder", () => {
 	/**
@@ -10,28 +12,17 @@ describe("MessageResponder", () => {
 	it("should send 200 with success", async () => {
 		// Arrange.
 		const proxy = vi.fn();
-		const res = new MessageResponder(
-			{
-				__type: "request",
-				id: "abc123",
-				path: "/pets",
-				unidirectional: false,
-			},
-			proxy,
-		);
+		const req = new Request({ path: "/pets" });
+		const responder = new MessageResponder(req, proxy);
 
 		// Act.
-		await res.success(["Arthur", "Izzie", "Murphy"]);
+		await responder.success(["Arthur", "Izzie", "Murphy"]);
 
 		// Assert.
 		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenLastCalledWith<[ServerResponseMessage]>({
-			__type: "response",
-			id: "abc123",
-			path: "/pets",
-			status: 200,
-			body: ["Arthur", "Izzie", "Murphy"],
-		});
+		expect(proxy).toHaveBeenLastCalledWith<[Response<string[]>]>(
+			new Response(req.id, req.path, 200, ["Arthur", "Izzie", "Murphy"]),
+		);
 	});
 
 	/**
@@ -40,31 +31,20 @@ describe("MessageResponder", () => {
 	it("should send 500 with fail", async () => {
 		// Arrange.
 		const proxy = vi.fn();
-		const res = new MessageResponder(
-			{
-				__type: "request",
-				id: "abc123",
-				path: "/toggle-light",
-				unidirectional: false,
-				body: {
-					id: 123,
-				},
+		const req = new Request({
+			path: "/toggle-light",
+			body: {
+				id: 123,
 			},
-			proxy,
-		);
+		});
+		const responder = new MessageResponder(req, proxy);
 
 		// Act.
-		await res.fail([]);
+		await responder.fail([]);
 
 		// Assert.
 		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenLastCalledWith<[ServerResponseMessage]>({
-			__type: "response",
-			id: "abc123",
-			path: "/toggle-light",
-			status: 500,
-			body: [],
-		});
+		expect(proxy).toHaveBeenLastCalledWith<[Response<JsonValue[]>]>(new Response(req.id, req.path, 500, []));
 	});
 
 	/**
@@ -73,27 +53,17 @@ describe("MessageResponder", () => {
 	it("send status", async () => {
 		// Arrange.
 		const proxy = vi.fn();
-		const res = new MessageResponder(
-			{
-				__type: "request",
-				id: "abc123",
-				path: "/mute-mic",
-				unidirectional: false,
-			},
-			proxy,
-		);
+		const req = new Request({
+			path: "/mute-mic",
+		});
+		const responder = new MessageResponder(req, proxy);
 
 		// Act.
-		await res.send(501);
+		await responder.send(501);
 
 		// Assert.
 		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenLastCalledWith<[ServerResponseMessage]>({
-			__type: "response",
-			id: "abc123",
-			path: "/mute-mic",
-			status: 501,
-		});
+		expect(proxy).toHaveBeenLastCalledWith<[Response]>(new Response(req.id, req.path, 501, undefined));
 	});
 
 	/**
@@ -102,27 +72,18 @@ describe("MessageResponder", () => {
 	it("can respond when unidirectional", async () => {
 		// Arrange.
 		const proxy = vi.fn();
-		const res = new MessageResponder(
-			{
-				__type: "request",
-				id: "abc123",
-				path: "/test",
-				unidirectional: true,
-			},
-			proxy,
-		);
+		const req = new Request({
+			path: "/test",
+			unidirectional: true,
+		});
+		const responder = new MessageResponder(req, proxy);
 
 		// Act.
-		await res.success();
+		await responder.success();
 
 		// Assert.
 		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenLastCalledWith<[ServerResponseMessage]>({
-			__type: "response",
-			id: "abc123",
-			path: "/test",
-			status: 200,
-		});
+		expect(proxy).toHaveBeenLastCalledWith<[Response]>(new Response(req.id, req.path, 200, undefined));
 	});
 
 	/**
@@ -131,30 +92,20 @@ describe("MessageResponder", () => {
 	it("down not respond more than once", async () => {
 		// Arrange.
 		const proxy = vi.fn();
-		const res = new MessageResponder(
-			{
-				__type: "request",
-				id: "abc123",
-				path: "/test",
-				unidirectional: false,
-				body: {
-					id: 123,
-				},
+		const req = new Request({
+			path: "/test",
+			body: {
+				id: 123,
 			},
-			proxy,
-		);
+		});
+		const responder = new MessageResponder(req, proxy);
 
 		// Act.
-		await res.success();
-		await res.success({ test: "other" });
+		await responder.success();
+		await responder.success({ test: "other" });
 
 		// Assert.
 		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenLastCalledWith<[ServerResponseMessage]>({
-			__type: "response",
-			id: "abc123",
-			path: "/test",
-			status: 200,
-		});
+		expect(proxy).toHaveBeenLastCalledWith<[Response]>(new Response(req.id, req.path, 200, undefined));
 	});
 });
