@@ -1,40 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { JsonValue } from "../../json.js";
-import type { ClientRequestMessage } from "../client.js";
 import { MessageGateway } from "../gateway.js";
-import { MessageResponder } from "../responder.js";
-import { Request } from "../server.js";
+import { Request } from "../request.js";
 
 describe("MessageGateway", () => {
-	it("must provide sender context", async () => {
-		// Arrange.
-		const proxy = vi.fn();
-		const context = {
-			name: "Elgato",
-		};
-		const handler = vi.fn();
-		const gateway = new MessageGateway<typeof context>(proxy);
-		gateway.route("/test", handler);
-
-		const msg: ClientRequestMessage = {
-			__type: "request",
-			id: "req1",
-			path: "/test",
-			unidirectional: false,
-			body: {
-				name: "Elgato",
-			},
-		};
-
-		// Act.
-		await gateway.process(msg, () => context);
-
-		// Assert.
-		expect(handler).toHaveBeenCalledTimes(1);
-		expect(handler).toHaveBeenCalledWith(new Request(msg, context), expect.any(MessageResponder));
-	});
-
 	/**
 	 * Asserts {@link MessageGateway.process} correctly handles unexpected data structures.
 	 */
@@ -44,7 +14,7 @@ describe("MessageGateway", () => {
 		const gateway = new MessageGateway<object>(proxy);
 
 		// Act.
-		const result = await gateway.process(true, vi.fn());
+		const result = await gateway.process(true);
 
 		// Assert.
 		expect(result).toBe(false);
@@ -57,17 +27,10 @@ describe("MessageGateway", () => {
 	it("returns false unknown routes", async () => {
 		// Arrange.
 		const gateway = new MessageGateway<object>(vi.fn());
+		const msg = new Request({ path: "abc123" });
 
 		// Act.
-		const result = await gateway.process(
-			{
-				__type: "request",
-				id: "abc123",
-				path: "/",
-				unidirectional: false,
-			} satisfies ClientRequestMessage,
-			vi.fn(),
-		);
+		const result = await gateway.process(msg.toJSON());
 
 		// Assert.
 		expect(result).toBe(false);
@@ -93,18 +56,14 @@ describe("MessageGateway", () => {
 		// Act.
 		gateway.route("/test", handlers[0]);
 		gateway.route("/test", handlers[1]);
-		await gateway.process(
-			{
-				__type: "request",
-				id: "12345",
-				path: "/test",
-				unidirectional: false,
-				body: {
-					name: "Elgato",
-				},
-			} satisfies ClientRequestMessage,
-			vi.fn(),
-		);
+		const req = new Request({
+			path: "/test",
+			body: {
+				name: "Elgato",
+			},
+		});
+
+		await gateway.process(req.toJSON());
 
 		// Assert
 		expect(order).toEqual(["First", "Second"]);
@@ -135,22 +94,19 @@ describe("MessageGateway", () => {
 		const proxy = vi.fn();
 		const listener = vi.fn();
 		const gateway = new MessageGateway<object>(proxy);
-		const message = {
-			__type: "request",
-			id: "12345",
+		const req = new Request({
 			path: "/test",
-			unidirectional: false,
-		} satisfies ClientRequestMessage;
+		});
 
 		const disposable = gateway.route("/test", listener);
 
 		// Act, assert.
-		await gateway.process(message, vi.fn());
+		await gateway.process(req.toJSON());
 		expect(listener).toHaveBeenCalledTimes(1);
 
 		// Act, assert (dispose).
 		disposable.dispose();
-		await gateway.process(message, vi.fn());
+		await gateway.process(req.toJSON());
 		expect(listener).toHaveBeenCalledTimes(1); // Should still be 1.
 	});
 
@@ -164,7 +120,7 @@ describe("MessageGateway", () => {
 
 			client = new MessageGateway(async (value) => {
 				try {
-					await server.process(value as JsonValue, vi.fn());
+					await server.process(value as JsonValue);
 				} catch (err) {
 					// SafeError is acceptable as it is used for "/error"
 					if (!(err instanceof SafeError)) {
@@ -176,7 +132,7 @@ describe("MessageGateway", () => {
 			});
 
 			server = new MessageGateway<object>(async (value) => {
-				await client.process(value as JsonValue, vi.fn());
+				await client.process(value as JsonValue);
 				return true;
 			});
 

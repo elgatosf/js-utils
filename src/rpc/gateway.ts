@@ -1,15 +1,8 @@
 import type { IDisposable } from "../disposable.js";
 import type { JsonValue } from "../json.js";
-import { Client, type RequestOptions, Response } from "./client.js";
+import { Client, Response } from "./client.js";
+import { Request, type RequestOptions } from "./request.js";
 import { type RouteConfiguration, type RouteHandler, Server } from "./server.js";
-
-/**
- * The default request options.
- */
-const DEFAULT_REQUEST_OPTIONS = {
-	timeout: 5000,
-	unidirectional: false,
-};
 
 /**
  * Provides a gateway between to clients and a server, enabling them to send/receive requests/responses.
@@ -62,36 +55,29 @@ export class MessageGateway<TContext> {
 		requestOrPath: RequestOptions<U> | string,
 		bodyOrUndefined?: U,
 	): Promise<Response<T>> {
-		const getRequestOptions = (): RequestOptions<U> => {
-			if (typeof requestOrPath === "string") {
-				return {
-					...DEFAULT_REQUEST_OPTIONS,
+		if (typeof requestOrPath === "string") {
+			return this.#client.send(
+				new Request({
 					path: requestOrPath,
 					body: bodyOrUndefined,
-				};
-			}
-
-			return {
-				...DEFAULT_REQUEST_OPTIONS,
-				...requestOrPath,
-			};
-		};
-
-		return this.#client.fetch(getRequestOptions());
+				}),
+			);
+		} else {
+			return this.#client.send(new Request(requestOrPath));
+		}
 	}
 
 	/**
 	 * Attempts to process the specified message.
 	 * @param message Message to process.
-	 * @param contextProvider Function responsible for providing the context of the request.
 	 * @returns `true` when the message was successfully processed; otherwise `false`.
 	 */
-	public async process(message: JsonValue, contextProvider: () => TContext): Promise<boolean> {
-		if (await this.#client.process(message)) {
+	public async process(message: JsonValue): Promise<boolean> {
+		if (await this.#client.receive(message)) {
 			return true;
 		}
 
-		if (await this.#server.process(message, contextProvider)) {
+		if (await this.#server.receive(message)) {
 			return true;
 		}
 
@@ -108,7 +94,7 @@ export class MessageGateway<TContext> {
 	 */
 	public route<TBody extends JsonValue = JsonValue>(
 		path: string,
-		handler: RouteHandler<TContext, TBody>,
+		handler: RouteHandler<TBody>,
 		options?: RouteConfiguration<TContext>,
 	): IDisposable {
 		return this.#server.route(path, handler, options);
@@ -120,4 +106,4 @@ export class MessageGateway<TContext> {
  * @param payload Payload to be sent to the server.
  * @returns `true` when the server was able to accept the response; otherwise `false`.
  */
-export type OutboundMessageProxy = (payload: JsonValue) => Promise<boolean> | boolean;
+export type OutboundMessageProxy = (payload: JsonValue | Request<JsonValue | undefined>) => Promise<boolean> | boolean;

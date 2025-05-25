@@ -1,9 +1,9 @@
 import type { IDisposable } from "../disposable.js";
 import { EventEmitter } from "../event-emitter.js";
 import type { JsonValue } from "../json.js";
-import type { ClientRequestMessage } from "./client.js";
 import type { OutboundMessageProxy } from "./gateway.js";
-import { isRequest, type Message, type StatusCode } from "./message.js";
+import { type Message, type StatusCode } from "./message.js";
+import { Request } from "./request.js";
 import { MessageResponder } from "./responder.js";
 
 /**
@@ -31,12 +31,12 @@ export class Server<TContext> {
 	/**
 	 * Attempts to process the specified message received from the client.
 	 * @param message Message to process.
-	 * @param contextProvider Function responsible for providing the context of the request.
 	 * @returns `true` when the server was able to process the message; otherwise `false`.
 	 */
-	public async process(message: JsonValue, contextProvider: () => TContext): Promise<boolean> {
-		if (isRequest(message)) {
-			if (await this.#routeRequest(message, contextProvider())) {
+	public async receive(message: JsonValue): Promise<boolean> {
+		const request = Request.parse(message);
+		if (request !== undefined) {
+			if (await this.#routeRequest(request)) {
 				return true;
 			}
 		}
@@ -54,13 +54,14 @@ export class Server<TContext> {
 	 */
 	public route<TBody extends JsonValue = JsonValue>(
 		path: string,
-		handler: RouteHandler<TContext, TBody>,
+		handler: RouteHandler<TBody>,
 		options?: RouteConfiguration<TContext>,
 	): IDisposable {
 		options = { filter: (): boolean => true, ...options };
 
-		return this.#routes.disposableOn(path, async ({ request, responder, resolve }: RouteResolver<TContext, TBody>) => {
-			if (options?.filter && options.filter(request.context)) {
+		return this.#routes.disposableOn(path, async ({ request, responder, resolve }: RouteResolver<TBody>) => {
+			// TODO: Reintroduce context
+			if (options?.filter /*&& options.filter(request.context)*/) {
 				await resolve();
 
 				try {
@@ -80,18 +81,16 @@ export class Server<TContext> {
 
 	/**
 	 * Handles inbound requests.
-	 * @param req The request.
-	 * @param context Context associated with the request.
+	 * @param request The request.
 	 * @template TBody Type of the request's body.
 	 * @returns `true` when the request was handled; otherwise `false`.
 	 */
-	async #routeRequest<TBody extends JsonValue>(req: ClientRequestMessage<TBody>, context: TContext): Promise<boolean> {
-		const responder = new MessageResponder(req, this.#proxy);
-		const request = new Request(req, context);
+	async #routeRequest<TBody extends JsonValue>(request: Request<TBody>): Promise<boolean> {
+		const responder = new MessageResponder(request, this.#proxy);
 
 		// Get handlers of the path, and invoke them; filtering is applied by the handlers themselves
 		let resolved = false;
-		const routes = this.#routes.listeners(req.path) as ((ev: RouteResolver<TContext, TBody>) => Promise<void>)[];
+		const routes = this.#routes.listeners(request.path) as ((ev: RouteResolver<TBody>) => Promise<void>)[];
 
 		for (const route of routes) {
 			await route({
@@ -121,48 +120,6 @@ export class Server<TContext> {
 }
 
 /**
- * Request received from a client.
- * @template TBody Type of the request's body.
- */
-export class Request<TBody extends JsonValue, TContext> {
-	/**
-	 * Context associated with the request.
-	 */
-	public readonly context: TContext;
-
-	/**
-	 * Source of the request.
-	 */
-	readonly #request: ClientRequestMessage<TBody>;
-
-	/**
-	 * Initializes a new instance of the {@link Request} class.
-	 * @param request Source of the request.
-	 * @param context Context associated with the request.
-	 */
-	constructor(request: ClientRequestMessage<TBody>, context: TContext) {
-		this.context = context;
-		this.#request = request;
-	}
-
-	/**
-	 * Body of the request.
-	 * @returns The value.
-	 */
-	public get body(): TBody | undefined {
-		return this.#request.body;
-	}
-
-	/**
-	 * Indicates whether the request is unidirectional; when `true`, a response will not be awaited.
-	 * @returns The value.
-	 */
-	public get unidirectional(): boolean {
-		return this.#request.unidirectional;
-	}
-}
-
-/**
  * Configuration that defines the route.
  */
 export type RouteConfiguration<TContext> = {
@@ -179,24 +136,24 @@ export type RouteConfiguration<TContext> = {
  * @template TContext Type of the context associated with the request.
  * @template TBody Type of the request's body.
  */
-export type RouteHandler<TContext, TBody extends JsonValue = JsonValue> = (
-	request: Request<TBody, TContext>,
-	responder: MessageResponder,
+export type RouteHandler<TBody extends JsonValue = JsonValue> = (
+	request: Request<TBody>,
+	responder: MessageResponder<TBody>,
 ) => JsonValue | Promise<JsonValue | void> | void;
 
 /**
  * Contains information about a request, and the ability to resolve it.
  */
-type RouteResolver<TContext, TBody extends JsonValue> = {
+type RouteResolver<TBody extends JsonValue> = {
 	/**
 	 * The request.
 	 */
-	request: Request<TBody, TContext>;
+	request: Request<TBody>;
 
 	/**
 	 * Responder responsible for sending a response.
 	 */
-	responder: MessageResponder;
+	responder: MessageResponder<TBody>;
 
 	/**
 	 * Resolves the request, marking it as fulfilled.

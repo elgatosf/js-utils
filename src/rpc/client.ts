@@ -1,9 +1,8 @@
 import type { JsonValue } from "../json.js";
 import type { OutboundMessageProxy } from "./gateway.js";
-import { isResponse, type Message, type StatusCode } from "./message.js";
+import { isResponse, type StatusCode } from "./message.js";
+import { Request } from "./request.js";
 import type { ServerResponseMessage } from "./server.js";
-
-// WE DON'T CARE ABOUT THE REQUEST BODY TYPE ON SENDING, REMOVE THE TYPE
 
 /**
  * Client capable of sending message requests to, and processing responses from, a server.
@@ -28,24 +27,34 @@ export class Client {
 	}
 
 	/**
+	 * Attempts to process the specified message received from the server.
+	 * @param message Message to process.
+	 * @returns `true` when the client was able to process the message; otherwise `false`.
+	 */
+	public async receive(message: JsonValue): Promise<boolean> {
+		if (isResponse(message) && this.#resolveRequest(message)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
 	 * Sends the request to the listening server.
 	 * @param request The request.
 	 * @returns The response.
 	 */
-	public async fetch<T extends JsonValue = JsonValue, U extends JsonValue = JsonValue>(
-		request: RequestOptions<U>,
-	): Promise<Response<T>> {
-		const id = crypto.randomUUID();
-		const { path, body, timeout, unidirectional } = request;
+	public async send<T extends JsonValue, U extends JsonValue = undefined>(request: Request<T>): Promise<Response<U>> {
+		const { id, path, timeout } = request;
 
 		// Initialize the response handler.
-		const response = new Promise<Response<T>>((resolve) => {
+		const response = new Promise<Response<U>>((resolve) => {
 			this.#requests.set(id, (res: Response) => {
 				if (res.status !== 408) {
 					clearTimeout(timeoutMonitor);
 				}
 
-				resolve(res as Response<T>);
+				resolve(res as Response<U>);
 			});
 		});
 
@@ -55,13 +64,7 @@ export class Client {
 			timeout,
 		);
 
-		const accepted = await this.#proxy({
-			__type: "request",
-			body,
-			id,
-			path,
-			unidirectional: unidirectional ?? true,
-		} satisfies ClientRequestMessage<U>);
+		const accepted = await this.#proxy(request);
 
 		// When the server did not accept the request, return a 406.
 		if (!accepted) {
@@ -69,19 +72,6 @@ export class Client {
 		}
 
 		return response;
-	}
-
-	/**
-	 * Attempts to process the specified message received from the server.
-	 * @param message Message to process.
-	 * @returns `true` when the client was able to process the message; otherwise `false`.
-	 */
-	public async process(message: JsonValue): Promise<boolean> {
-		if (isResponse(message) && this.#resolveRequest(message)) {
-			return true;
-		}
-
-		return false;
 	}
 
 	/**
@@ -102,41 +92,6 @@ export class Client {
 		return false;
 	}
 }
-
-/**
- * The structure of a request sent from a client, to a listening server.
- */
-export type ClientRequestMessage<T extends JsonValue = JsonValue> = Message<"request", T> & {
-	/**
-	 * Indicates whether the request is unidirectional; when `true`, a response will not be awaited.
-	 */
-	readonly unidirectional: boolean;
-};
-
-/**
- * Request options associated with a request to be sent to the server.
- */
-export type RequestOptions<T extends JsonValue = JsonValue> = {
-	/**
-	 * Body sent with the request.
-	 */
-	body?: T;
-
-	/**
-	 * Path of the request.
-	 */
-	path: string;
-
-	/**
-	 * Timeout duration in milliseconds; defaults to `5000` (5s).
-	 */
-	timeout?: number;
-
-	/**
-	 * Indicates whether the request is unidirectional; when `true`, a response will not be awaited.
-	 */
-	unidirectional?: boolean;
-};
 
 /**
  * Response received from the listening server.
