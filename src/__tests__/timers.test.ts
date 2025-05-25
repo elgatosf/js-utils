@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import "../promises.js";
+import { withResolvers } from "../promises.js";
 import { debounce } from "../timers.js";
 
 /**
@@ -21,7 +21,7 @@ describe("debounce", () => {
 
 	it("should wait for the delay before invoking the callback", async () => {
 		// Arrange.
-		const { promise, resolve } = Promise.withResolvers();
+		const { promise, resolve } = withResolvers();
 		const fn = debounce(() => resolve(), 100);
 
 		// Act.

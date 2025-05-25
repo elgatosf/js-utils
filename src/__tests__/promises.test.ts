@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import "../promises.js";
+import { withResolvers } from "../promises.js";
 
 describe("PromiseCompletionSource<T>", () => {
 	it("Defaults to pending", async () => {
 		// given, when, then.
-		const { promise } = Promise.withResolvers();
+		const { promise } = withResolvers();
 		await expect(getPromiseState(promise)).resolves.toBe("pending");
 	});
 
 	it("Resolves after setResult", async () => {
 		// Arrange, act.
-		const { promise, resolve } = Promise.withResolvers<string>();
+		const { promise, resolve } = withResolvers<string>();
 		resolve("foo");
 
 		// Assert.
@@ -20,7 +20,7 @@ describe("PromiseCompletionSource<T>", () => {
 
 	it("Resolves with result", async () => {
 		// Arrange, act.
-		const { promise, resolve } = Promise.withResolvers<string>();
+		const { promise, resolve } = withResolvers<string>();
 		resolve("foo");
 
 		// Assert.
@@ -29,7 +29,7 @@ describe("PromiseCompletionSource<T>", () => {
 
 	it("Reject after setException", async () => {
 		// Arrange, act.
-		const { promise, reject } = Promise.withResolvers<string>();
+		const { promise, reject } = withResolvers<string>();
 		reject();
 
 		// Assert.
@@ -38,7 +38,7 @@ describe("PromiseCompletionSource<T>", () => {
 
 	it("Rejects with exception", async () => {
 		// Arrange, act.
-		const { promise, reject } = Promise.withResolvers<string>();
+		const { promise, reject } = withResolvers<string>();
 		reject("Mock error");
 
 		// Assert.
@@ -47,8 +47,8 @@ describe("PromiseCompletionSource<T>", () => {
 });
 
 /**
- * Gets the state of the promise.
- * @param promise The promise.
+ * Gets the state of the
+ * @param promise The
  * @returns The state of the promise, either 'pending', 'complete' or 'error'.
  */
 async function getPromiseState<T>(promise: Promise<T>): Promise<"complete" | "error" | "pending"> {
