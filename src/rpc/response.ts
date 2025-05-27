@@ -24,7 +24,7 @@ const schema = z.object({
 });
 
 /**
- * Response to an RPC message.
+ * Response to an RPC request.
  */
 export class Response<T extends JsonValue = undefined> {
 	/**

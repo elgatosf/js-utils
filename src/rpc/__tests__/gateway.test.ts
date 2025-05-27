@@ -1,15 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { MessageGateway, MessageResponder, Request } from "../index.js";
+import { Gateway, Request, Responder } from "../index.js";
 
-describe("MessageGateway", () => {
+describe("Gateway", () => {
 	/**
-	 * Asserts {@link MessageGateway.receive} correctly handles unexpected data structures.
+	 * Asserts {@link Gateway.receive} correctly handles unexpected data structures.
 	 */
 	it("must not process unknown payloads", async () => {
 		// Arrange.
 		const proxy = vi.fn();
-		const gateway = new MessageGateway(proxy);
+		const gateway = new Gateway(proxy);
 
 		// Act.
 		const result = await gateway.receive(true);
@@ -20,11 +20,11 @@ describe("MessageGateway", () => {
 	});
 
 	/**
-	 * Asserts {@link MessageGateway} returns `false` for unknown routes.
+	 * Asserts {@link Gateway} returns `false` for unknown routes.
 	 */
 	it("returns false unknown routes", async () => {
 		// Arrange.
-		const gateway = new MessageGateway(vi.fn());
+		const gateway = new Gateway(vi.fn());
 		const msg = new Request({ path: "abc123" });
 
 		// Act.
@@ -35,12 +35,12 @@ describe("MessageGateway", () => {
 	});
 
 	/**
-	 * Asserts {@link MessageGateway} executes route handlers in order.
+	 * Asserts {@link Gateway} executes route handlers in order.
 	 */
 	it("must execute handlers in order", async () => {
 		// Arrange
 		const proxy = vi.fn();
-		const gateway = new MessageGateway(proxy);
+		const gateway = new Gateway(proxy);
 		const order: string[] = [];
 		const handlers = [
 			() => {
@@ -68,12 +68,12 @@ describe("MessageGateway", () => {
 	});
 
 	/**
-	 * Asserts {@link MessageGateway} returns a 406 when the proxy did not accept the payload.
+	 * Asserts {@link Gateway} returns a 406 when the proxy did not accept the payload.
 	 */
 	it("must return 406 when the payload could not be sent to the server", async () => {
 		// Arrange.
 		const proxy = vi.fn().mockReturnValue(false);
-		const gateway = new MessageGateway(proxy);
+		const gateway = new Gateway(proxy);
 
 		// Act.
 		const res = await gateway.send("/");
@@ -85,13 +85,13 @@ describe("MessageGateway", () => {
 	});
 
 	/**
-	 * Asserts the disposable of {@link MessageGateway.route} can remove the route.
+	 * Asserts the disposable of {@link Gateway.route} can remove the route.
 	 */
 	it("can remove routes", async () => {
 		// Arrange.
 		const proxy = vi.fn();
 		const listener = vi.fn();
-		const gateway = new MessageGateway(proxy);
+		const gateway = new Gateway(proxy);
 		const req = new Request({
 			path: "/test",
 		});
@@ -109,13 +109,13 @@ describe("MessageGateway", () => {
 	});
 
 	/**
-	 * Asserts context can be provided to routed messages.
+	 * Asserts context can be provided to routed requests.
 	 */
 	it("provides context to route", async () => {
 		// Arrange.
 		const proxy = vi.fn();
 		const listener = vi.fn();
-		const gateway = new MessageGateway(proxy);
+		const gateway = new Gateway(proxy);
 		const req = new Request({
 			path: "/context",
 		});
@@ -126,18 +126,18 @@ describe("MessageGateway", () => {
 
 		// Assert.
 		expect(listener).toHaveBeenCalledTimes(1);
-		expect(listener).toHaveBeenCalledWith(expect.any(Request), expect.any(MessageResponder), "Context");
+		expect(listener).toHaveBeenCalledWith(expect.any(Request), expect.any(Responder), "Context");
 	});
 
 	describe("fetch e2e", () => {
-		let client!: MessageGateway;
-		let server!: MessageGateway;
-		let cascade!: (message: string) => void;
+		let client!: Gateway;
+		let server!: Gateway;
+		let cascade!: (value: string) => void;
 
 		beforeEach(() => {
 			cascade = vi.fn();
 
-			client = new MessageGateway(async (value) => {
+			client = new Gateway(async (value) => {
 				try {
 					await server.receive(JSON.parse(JSON.stringify(value)), () => "Context");
 				} catch (err) {
@@ -150,7 +150,7 @@ describe("MessageGateway", () => {
 				return true;
 			});
 
-			server = new MessageGateway(async (value) => {
+			server = new Gateway(async (value) => {
 				await client.receive(JSON.parse(JSON.stringify(value)));
 				return true;
 			});
@@ -318,7 +318,7 @@ describe("MessageGateway", () => {
 		});
 
 		/**
-		 * Asserts {@link MessageGateway.send} executes all paths, but does not respond more than once.
+		 * Asserts {@link Gateway.send} executes all paths, but does not respond more than once.
 		 */
 		it("should execute all, but return after the first", async () => {
 			// Arrange, act.

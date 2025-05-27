@@ -1,18 +1,18 @@
 import type { IDisposable } from "../disposable.js";
 import { EventEmitter } from "../event-emitter.js";
 import type { JsonValue } from "../json.js";
-import type { OutboundMessageProxy } from "./gateway.js";
+import type { GatewayProxy } from "./gateway.js";
 import { Request } from "./request.js";
-import { MessageResponder } from "./responder.js";
+import { Responder } from "./responder.js";
 
 /**
- * Server capable of receiving message requests from, and processing responses to, a client.
+ * Server capable of receiving requests from, and sending responses to, a client.
  */
 export class Server {
 	/**
-	 * Proxy responsible for sending messages to the server.
+	 * Proxy responsible for sending responses to a client.
 	 */
-	readonly #proxy: OutboundMessageProxy;
+	readonly #proxy: GatewayProxy;
 
 	/**
 	 * Registered routes, and their respective handlers.
@@ -21,20 +21,20 @@ export class Server {
 
 	/**
 	 * Initializes a new instance of the {@link Server} class.
-	 * @param proxy Proxy responsible for sending messages to the server.
+	 * @param proxy Proxy responsible for sending responses to a client.
 	 */
-	constructor(proxy: OutboundMessageProxy) {
+	constructor(proxy: GatewayProxy) {
 		this.#proxy = proxy;
 	}
 
 	/**
-	 * Attempts to process the specified message received from the client.
-	 * @param message Message to process.
+	 * Attempts to process the specified request received from the client.
+	 * @param value Value to process.
 	 * @param contextProvider Optional context provider, provided to route handlers when responding to requests.
-	 * @returns `true` when the server was able to process the message; otherwise `false`.
+	 * @returns `true` when the server was able to process the request; otherwise `false`.
 	 */
-	public async receive<TContext = undefined>(message: JsonValue, contextProvider?: () => TContext): Promise<boolean> {
-		const request = Request.parse(message);
+	public async receive<TContext = undefined>(value: JsonValue, contextProvider?: () => TContext): Promise<boolean> {
+		const request = Request.parse(value);
 		if (request !== undefined) {
 			contextProvider ??= (): TContext => undefined!;
 			if (await this.#routeRequest(request, contextProvider)) {
@@ -91,7 +91,7 @@ export class Server {
 		request: Request<TRequest>,
 		contextProvider: () => TContext,
 	): Promise<boolean> {
-		const responder = new MessageResponder(request, this.#proxy);
+		const responder = new Responder(request, this.#proxy);
 
 		// Get handlers of the path, and invoke them; filtering is applied by the handlers themselves
 		let resolved = false;
@@ -131,8 +131,8 @@ export class Server {
  */
 export type RouteConfiguration<TContext> = {
 	/**
-	 * Optional filter used to determine if a message can be routed; when `true`, the route handler will be called.
-	 * @param context Context associated with the message.
+	 * Optional filter used to determine if a request can be routed; when `true`, the route handler will be called.
+	 * @param context Context associated with the request.
 	 * @returns Should return `true` when the request can be handled; otherwise `false`.
 	 */
 	filter?: (source: TContext) => boolean;
@@ -145,7 +145,7 @@ export type RouteConfiguration<TContext> = {
  */
 export type RouteHandler<TRequest extends JsonValue = undefined, TContext = undefined> = (
 	request: Request<TRequest>,
-	responder: MessageResponder<TRequest>,
+	responder: Responder<TRequest>,
 	context: TContext,
 ) => JsonValue | Promise<JsonValue | void> | void;
 
@@ -154,7 +154,7 @@ export type RouteHandler<TRequest extends JsonValue = undefined, TContext = unde
  */
 type RouteResolver<TBody extends JsonValue, TContext> = {
 	/**
-	 * Context provided to the route handler when receiving a message.
+	 * Context provided to the route handler when receiving a request.
 	 */
 	context: TContext;
 
@@ -166,7 +166,7 @@ type RouteResolver<TBody extends JsonValue, TContext> = {
 	/**
 	 * Responder responsible for sending a response.
 	 */
-	responder: MessageResponder<TBody>;
+	responder: Responder<TBody>;
 
 	/**
 	 * Resolves the request, marking it as fulfilled.

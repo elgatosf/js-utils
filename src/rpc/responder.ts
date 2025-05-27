@@ -1,17 +1,17 @@
 import type { JsonValue } from "../json.js";
-import type { OutboundMessageProxy } from "./gateway.js";
+import type { GatewayProxy } from "./gateway.js";
 import type { Request } from "./request.js";
 import { Response } from "./response.js";
 import type { StatusCode } from "./status.js";
 
 /**
- * Message responder responsible for responding to a request.
+ * Responder responsible for responding to a request.
  */
-export class MessageResponder<TBody extends JsonValue> {
+export class Responder<TBody extends JsonValue> {
 	/**
 	 * Proxy responsible for forwarding the response to the client.
 	 */
-	readonly #proxy: OutboundMessageProxy;
+	readonly #proxy: GatewayProxy;
 
 	/**
 	 * The request the response is associated with.
@@ -24,11 +24,11 @@ export class MessageResponder<TBody extends JsonValue> {
 	#responded = false;
 
 	/**
-	 * Initializes a new instance of the {@link MessageResponder} class.
+	 * Initializes a new instance of the {@link Responder} class.
 	 * @param request The request the response is associated with.
 	 * @param proxy Proxy responsible for forwarding the response to the client.
 	 */
-	constructor(request: Request<TBody>, proxy: OutboundMessageProxy) {
+	constructor(request: Request<TBody>, proxy: GatewayProxy) {
 		this.#request = request;
 		this.#proxy = proxy;
 	}

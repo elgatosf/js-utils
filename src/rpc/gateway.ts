@@ -8,7 +8,7 @@ import { type RouteConfiguration, type RouteHandler, Server } from "./server.js"
 /**
  * Provides a gateway between to clients and a server, enabling them to send/receive requests/responses.
  */
-export class MessageGateway {
+export class Gateway {
 	/**
 	 * Server responsible for receiving requests, and sending responses.
 	 */
@@ -20,27 +20,27 @@ export class MessageGateway {
 	readonly #client: Client;
 
 	/**
-	 * Initializes a new instance of the {@link MessageGateway} class.
-	 * @param proxy Proxy responsible for sending messages between the two entities.
+	 * Initializes a new instance of the {@link Gateway} class.
+	 * @param proxy Proxy capable of sending requests or responses to a client or server.
 	 */
-	constructor(proxy: OutboundMessageProxy) {
+	constructor(proxy: GatewayProxy) {
 		this.#client = new Client(proxy);
 		this.#server = new Server(proxy);
 	}
 
 	/**
-	 * Attempts to process the specified message.
-	 * @param message Message to process.
+	 * Attempts to process the specified value as a request or response.
+	 * @param value Value to process.
 	 * @param contextProvider Optional context provider, provided to route handlers when responding to requests.
 	 * @template TContext Type of the context provided to the route handler when receiving requests.
-	 * @returns `true` when the message was successfully processed; otherwise `false`.
+	 * @returns `true` when the value was successfully processed; otherwise `false`.
 	 */
-	public async receive<TContext = unknown>(message: JsonValue, contextProvider?: () => TContext): Promise<boolean> {
-		if (await this.#client.receive(message)) {
+	public async receive<TContext = unknown>(value: JsonValue, contextProvider?: () => TContext): Promise<boolean> {
+		if (await this.#client.receive(value)) {
 			return true;
 		}
 
-		if (await this.#server.receive(message, contextProvider)) {
+		if (await this.#server.receive(value, contextProvider)) {
 			return true;
 		}
 
@@ -104,10 +104,10 @@ export class MessageGateway {
 }
 
 /**
- * Proxy capable of sending a payload to the plugin / property inspector.
- * @param payload Payload to be sent to the server.
- * @returns `true` when the server was able to accept the response; otherwise `false`.
+ * Proxy capable of sending requests or responses to a client or server.
+ * @param value Request or response to send.
+ * @returns `true` when the proxy was able to send the value; otherwise `false`.
  */
-export type OutboundMessageProxy = (
-	payload: Request<JsonValue | undefined> | Response<JsonValue | undefined>,
+export type GatewayProxy = (
+	value: Request<JsonValue | undefined> | Response<JsonValue | undefined>,
 ) => Promise<boolean> | boolean;

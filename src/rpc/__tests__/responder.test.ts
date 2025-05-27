@@ -1,17 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { JsonValue } from "../../index.js";
-import { MessageResponder, Request, Response } from "../index.js";
+import { Request, Responder, Response } from "../index.js";
 
-describe("MessageResponder", () => {
+describe("Responder", () => {
 	/**
-	 * Asserts {@link MessageResponder.send} sends a `200` with the optional body.
+	 * Asserts {@link Responder.send} sends a `200` with the optional body.
 	 */
 	it("should send 200 with success", async () => {
 		// Arrange.
 		const proxy = vi.fn();
 		const req = new Request({ path: "/pets" });
-		const responder = new MessageResponder(req, proxy);
+		const responder = new Responder(req, proxy);
 
 		// Act.
 		await responder.success(["Arthur", "Izzie", "Murphy"]);
@@ -24,7 +24,7 @@ describe("MessageResponder", () => {
 	});
 
 	/**
-	 * Asserts {@link MessageResponder.fail} sends a `500` with the optional body.
+	 * Asserts {@link Responder.fail} sends a `500` with the optional body.
 	 */
 	it("should send 500 with fail", async () => {
 		// Arrange.
@@ -35,7 +35,7 @@ describe("MessageResponder", () => {
 				id: 123,
 			},
 		});
-		const responder = new MessageResponder(req, proxy);
+		const responder = new Responder(req, proxy);
 
 		// Act.
 		await responder.fail([]);
@@ -46,7 +46,7 @@ describe("MessageResponder", () => {
 	});
 
 	/**
-	 * Asserts {@link MessageResponder.send} sends a status.
+	 * Asserts {@link Responder.send} sends a status.
 	 */
 	it("send status", async () => {
 		// Arrange.
@@ -54,7 +54,7 @@ describe("MessageResponder", () => {
 		const req = new Request({
 			path: "/mute-mic",
 		});
-		const responder = new MessageResponder(req, proxy);
+		const responder = new Responder(req, proxy);
 
 		// Act.
 		await responder.send(501);
@@ -74,7 +74,7 @@ describe("MessageResponder", () => {
 			path: "/test",
 			unidirectional: true,
 		});
-		const responder = new MessageResponder(req, proxy);
+		const responder = new Responder(req, proxy);
 
 		// Act.
 		await responder.success();
@@ -96,7 +96,7 @@ describe("MessageResponder", () => {
 				id: 123,
 			},
 		});
-		const responder = new MessageResponder(req, proxy);
+		const responder = new Responder(req, proxy);
 
 		// Act.
 		await responder.success();

@@ -1,16 +1,16 @@
 import type { JsonValue } from "../json.js";
-import type { OutboundMessageProxy } from "./gateway.js";
+import type { GatewayProxy } from "./gateway.js";
 import { Request } from "./request.js";
 import { Response } from "./response.js";
 
 /**
- * Client capable of sending message requests to, and processing responses from, a server.
+ * Server capable of sending requests to, and receiving responses from, a server.
  */
 export class Client {
 	/**
-	 * Proxy responsible for sending messages to the server.
+	 * Proxy responsible for sending requests to a server.
 	 */
-	readonly #proxy: OutboundMessageProxy;
+	readonly #proxy: GatewayProxy;
 
 	/**
 	 * Requests with pending responses.
@@ -19,19 +19,19 @@ export class Client {
 
 	/**
 	 * Initializes a new instance of the {@link Client} class.
-	 * @param proxy Proxy responsible for sending messages to the server.
+	 * @param proxy Proxy responsible for sending requests to a server
 	 */
-	constructor(proxy: OutboundMessageProxy) {
+	constructor(proxy: GatewayProxy) {
 		this.#proxy = proxy;
 	}
 
 	/**
-	 * Attempts to process the specified message received from the server.
-	 * @param message Message to process.
-	 * @returns `true` when the client was able to process the message; otherwise `false`.
+	 * Attempts to process the specified value as a response from a server.
+	 * @param value Value to process.
+	 * @returns `true` when the client was able to process the value as a response; otherwise `false`.
 	 */
-	public async receive(message: JsonValue): Promise<boolean> {
-		const response = Response.parse(message);
+	public async receive(value: JsonValue): Promise<boolean> {
+		const response = Response.parse(value);
 		if (response !== undefined && this.#resolveRequest(response)) {
 			return true;
 		}
