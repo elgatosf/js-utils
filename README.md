@@ -189,9 +189,9 @@ const number = parseNumber("13"); // 13
 Static function that returns an object that contains the promise, and two functions to resolve or reject it. Polyfill of [Promise.withResolvers()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/withResolvers).
 
 ```js
-import "@elgato/utils";
+import { withResolvers } "@elgato/utils";
 
-const { promise, resolve, reject } = Promise.withResolvers<string>();
+const { promise, resolve, reject } = withResolvers<string>();
 ```
 
 ## Timers
