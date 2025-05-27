@@ -1,5 +1,5 @@
 import type { IDisposable } from "../disposable.js";
-import type { JsonValue } from "../json.js";
+import { type JsonValue } from "../json.js";
 import { Client } from "./client.js";
 import { Request, type RequestOptions } from "./request.js";
 import { Response } from "./response.js";
@@ -10,12 +10,12 @@ import { type RouteConfiguration, type RouteHandler, Server } from "./server.js"
  */
 export class MessageGateway {
 	/**
-	 * Server responsible for processing requests, and returning responses.
+	 * Server responsible for receiving requests, and sending responses.
 	 */
 	readonly #server: Server;
 
 	/**
-	 * Client response for sending requests, and processing responses.
+	 * Client response for sending requests, and receiving responses.
 	 */
 	readonly #client: Client;
 
@@ -32,6 +32,7 @@ export class MessageGateway {
 	 * Attempts to process the specified message.
 	 * @param message Message to process.
 	 * @param contextProvider Optional context provider, provided to route handlers when responding to requests.
+	 * @template TContext Type of the context provided to the route handler when receiving requests.
 	 * @returns `true` when the message was successfully processed; otherwise `false`.
 	 */
 	public async receive<TContext = unknown>(message: JsonValue, contextProvider?: () => TContext): Promise<boolean> {
@@ -51,43 +52,43 @@ export class MessageGateway {
 	 * @param path Path used to identify the route.
 	 * @param handler Handler to be invoked when the request is received.
 	 * @param options Optional routing configuration.
+	 * @template TRequest Type of the request body.
+	 * @template TContext Type of the context provided to the route handler when receiving requests.
 	 * @returns Disposable capable of removing the route handler.
 	 */
-	public route<TBody extends JsonValue = JsonValue, TContext = undefined>(
+	public route<TRequest extends JsonValue = undefined, TContext = undefined>(
 		path: string,
-		handler: RouteHandler<TBody, TContext>,
+		handler: RouteHandler<TRequest, TContext>,
 		options?: RouteConfiguration<TContext>,
 	): IDisposable {
-		return this.#server.route<TBody, TContext>(path, handler, options);
+		return this.#server.route<TRequest, TContext>(path, handler, options);
 	}
 
 	/**
 	 * Sends the request to the listening server.
-	 * @param request The request.
-	 * @returns The response.
-	 */
-	public async send<T extends JsonValue = JsonValue, U extends JsonValue = JsonValue>(
-		request: RequestOptions<U>,
-	): Promise<Response<T>>;
-	/**
-	 * Sends the request to the listening server.
 	 * @param path Path of the request.
 	 * @param body Optional body sent with the request.
+	 * @template T Type of the response body.
 	 * @returns The response.
 	 */
-	public async send<TResponseBody extends JsonValue = JsonValue, U extends JsonValue = JsonValue>(
-		path: string,
-		body?: U,
-	): Promise<Response<TResponseBody>>;
+	public async send<T extends JsonValue>(path: string, body?: JsonValue): Promise<Response<T>>;
+	/**
+	 * Sends the request to the listening server.
+	 * @param request The request.
+	 * @template T Type of the response body.
+	 * @returns The response.
+	 */
+	public async send<T extends JsonValue = undefined>(request: RequestOptions): Promise<Response<T>>;
 	/**
 	 * Sends the request to the listening server.
 	 * @param requestOrPath The request, or the path of the request.
 	 * @param bodyOrUndefined Request body, or moot when constructing the request with {@link RequestOptions}.
+	 * @template T Type of the response body.
 	 * @returns The response.
 	 */
-	public async send<T extends JsonValue = JsonValue, U extends JsonValue = JsonValue>(
-		requestOrPath: RequestOptions<U> | string,
-		bodyOrUndefined?: U,
+	public async send<T extends JsonValue = undefined>(
+		requestOrPath: RequestOptions | string,
+		bodyOrUndefined?: JsonValue,
 	): Promise<Response<T>> {
 		if (typeof requestOrPath === "string") {
 			return this.#client.send(

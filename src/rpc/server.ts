@@ -52,16 +52,16 @@ export class Server {
 	 * @param options Optional routing configuration.
 	 * @returns Disposable capable of removing the route handler.
 	 */
-	public route<TBody extends JsonValue = JsonValue, TContext = undefined>(
+	public route<TRequest extends JsonValue, TContext>(
 		path: string,
-		handler: RouteHandler<TBody, TContext>,
+		handler: RouteHandler<TRequest, TContext>,
 		options?: RouteConfiguration<TContext>,
 	): IDisposable {
 		options = { filter: (): boolean => true, ...options };
 
 		return this.#routes.disposableOn(
 			path,
-			async ({ context, request, responder, resolve }: RouteResolver<TBody, TContext>) => {
+			async ({ context, request, responder, resolve }: RouteResolver<TRequest, TContext>) => {
 				if (options?.filter && options.filter(context)) {
 					await resolve();
 
@@ -85,18 +85,17 @@ export class Server {
 	 * Handles inbound requests.
 	 * @param request The request.
 	 * @param contextProvider Optional context provider, provided to route handlers when responding to requests.
-	 * @template TBody Type of the request's body.
 	 * @returns `true` when the request was handled; otherwise `false`.
 	 */
-	async #routeRequest<TBody extends JsonValue, TContext>(
-		request: Request<TBody>,
+	async #routeRequest<TRequest extends JsonValue, TContext>(
+		request: Request<TRequest>,
 		contextProvider: () => TContext,
 	): Promise<boolean> {
 		const responder = new MessageResponder(request, this.#proxy);
 
 		// Get handlers of the path, and invoke them; filtering is applied by the handlers themselves
 		let resolved = false;
-		const routes = this.#routes.listeners(request.path) as ((ev: RouteResolver<TBody, TContext>) => Promise<void>)[];
+		const routes = this.#routes.listeners(request.path) as ((ev: RouteResolver<TRequest, TContext>) => Promise<void>)[];
 		const context = contextProvider();
 
 		for (const route of routes) {
@@ -141,12 +140,12 @@ export type RouteConfiguration<TContext> = {
 
 /**
  * Function responsible for handling a request, and providing a response.
- * @template TBody Type of the request's body.
- * @template TContext Type of the context provided to the route handler.
+ * @template TRequest Type of the request body.
+ * @template TContext Type of the context provided to the route handler when receiving requests.
  */
-export type RouteHandler<TBody extends JsonValue = JsonValue, TContext = undefined> = (
-	request: Request<TBody>,
-	responder: MessageResponder<TBody>,
+export type RouteHandler<TRequest extends JsonValue = undefined, TContext = undefined> = (
+	request: Request<TRequest>,
+	responder: MessageResponder<TRequest>,
 	context: TContext,
 ) => JsonValue | Promise<JsonValue | void> | void;
 

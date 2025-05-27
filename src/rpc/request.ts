@@ -111,7 +111,7 @@ export type RequestOptions<T extends JsonValue = undefined> = (T extends undefin
 			/**
 			 * Body sent with the request.
 			 */
-			body?: T;
+			body?: JsonValue;
 		}
 	: {
 			/**
