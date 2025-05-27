@@ -16,6 +16,10 @@
             "types": "./dist/index.d.ts",
             "default": "./dist/index.js"
         },
+        "./i18n": {
+            "types": "./dist/i18n/index.d.ts",
+            "default": "./dist/i18n/index.js"
+        },
         "./logging": {
             "types": "./dist/logging/index.d.ts",
             "default": "./dist/logging/index.js"
