@@ -16,9 +16,13 @@
             "types": "./dist/index.d.ts",
             "default": "./dist/index.js"
         },
-        "./messaging": {
-            "types": "./dist/messaging/index.d.ts",
-            "default": "./dist/messaging/index.js"
+        "./logging": {
+            "types": "./dist/logging/index.d.ts",
+            "default": "./dist/logging/index.js"
+        },
+        "./rpc": {
+            "types": "./dist/rpc/index.d.ts",
+            "default": "./dist/rpc/index.js"
         }
     },
     "prettier": "@elgato/prettier-config",
