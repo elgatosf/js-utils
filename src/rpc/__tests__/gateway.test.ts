@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Gateway, Request, Responder } from "../index.js";
+import type { JsonValue } from "../../index.js";
+import { Gateway, Request, Responder, Response } from "../index.js";
 
 describe("Gateway", () => {
 	/**
@@ -137,7 +138,7 @@ describe("Gateway", () => {
 		beforeEach(() => {
 			cascade = vi.fn();
 
-			client = new Gateway(async (value) => {
+			client = new Gateway(async (value: Request<JsonValue> | Response<JsonValue>) => {
 				try {
 					await server.receive(JSON.parse(JSON.stringify(value)), () => "Context");
 				} catch (err) {
@@ -150,7 +151,7 @@ describe("Gateway", () => {
 				return true;
 			});
 
-			server = new Gateway(async (value) => {
+			server = new Gateway(async (value: Request<JsonValue> | Response<JsonValue>) => {
 				await client.receive(JSON.parse(JSON.stringify(value)));
 				return true;
 			});

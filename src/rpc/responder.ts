@@ -58,9 +58,7 @@ export class Responder<TBody extends JsonValue> {
 	 */
 	public async send(status: StatusCode, body?: JsonValue): Promise<void> {
 		if (this.canRespond) {
-			const res = new Response(this.#request.id, this.#request.path, status, body);
-
-			await this.#proxy(res);
+			await this.#proxy(new Response(this.#request.id, this.#request.path, status, body));
 			this.#responded = true;
 		}
 	}
