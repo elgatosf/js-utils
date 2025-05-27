@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-import { stringFormatter } from "../format.js";
+import { stringFormatter } from "../index.js";
 
 describe("stringFormatter", () => {
 	describe("data only", () => {

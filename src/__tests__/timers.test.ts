@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { withResolvers } from "../promises.js";
-import { debounce } from "../timers.js";
+import { debounce, withResolvers } from "../index.js";
 
 /**
  * Provides assertions for {@link debounce}.

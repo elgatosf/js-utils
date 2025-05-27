@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { Response } from "../response.js";
-import type { StatusCode } from "../status.js";
+import { Response, type StatusCode } from "../index.js";
 
 /**
  * Provides assertions for {@link @Response}.

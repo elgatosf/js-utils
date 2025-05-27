@@ -21,25 +21,6 @@ export function get(source: unknown, path: string): unknown {
 }
 
 /**
- * Determines whether the specified {@link key} exists in the {@link source}.
- * @param source Object to check.
- * @param key key to check for.
- * @param type Optional expected type.
- * @returns `true` when the {@link key} exists in the {@link source}; and when a {@link type} is specified, its type matches.
- */
-export function has(source: unknown, key: string, type?: Primitive): boolean {
-	if (typeof source === "object" && source !== null && key in source) {
-		if (type) {
-			return typeof source[key as keyof typeof source] === type;
-		} else {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-/**
  * Sets the specified `value` on the `target` object at the desired property `path`.
  * @param target The target object that is being written to.
  * @param path The path to the property to set.
@@ -52,8 +33,3 @@ export function set(target: any, path: string, value: unknown): void {
 		return i === props.length - 1 ? (obj[prop] = value) : obj[prop] || (obj[prop] = {});
 	}, target);
 }
-
-/**
- * Primitives JavaScript types
- */
-type Primitive = "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined";

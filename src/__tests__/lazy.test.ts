@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { Lazy } from "../lazy.js";
+import { Lazy } from "../index.js";
 
 describe("Lazy", () => {
 	it("loads value from factory", () => {

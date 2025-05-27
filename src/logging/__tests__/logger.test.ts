@@ -1,8 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
 
-import type { LogLevel } from "../level.js";
-import { Logger, type LoggerOptions } from "../logger.js";
-import { type LogEntry, type LogTarget } from "../target.js";
+import { type LogEntry, Logger, type LoggerOptions, type LogLevel, type LogTarget } from "../index.js";
 
 describe("Logger", () => {
 	/**

@@ -1,9 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { JsonValue } from "../../json.js";
-import { Request } from "../request.js";
-import { MessageResponder } from "../responder.js";
-import { Response } from "../response.js";
+import type { JsonValue } from "../../index.js";
+import { MessageResponder, Request, Response } from "../index.js";
 
 describe("MessageResponder", () => {
 	/**

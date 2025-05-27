@@ -1,8 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { MessageGateway } from "../gateway.js";
-import { Request } from "../request.js";
-import { MessageResponder } from "../responder.js";
+import { MessageGateway, MessageResponder, Request } from "../index.js";
 
 describe("MessageGateway", () => {
 	/**

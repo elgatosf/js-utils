@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { Request } from "../request.js";
+import { Request } from "../index.js";
 
 /**
  * Provides assertions for {@link @Request}.

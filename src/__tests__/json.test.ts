@@ -1,6 +1,6 @@
 import { assertType, describe, test } from "vitest";
 
-import type { JsonObject, JsonPrimitive, JsonValue } from "../json.js";
+import type { JsonObject, JsonPrimitive, JsonValue } from "../index.js";
 
 describe("json", () => {
 	test("JsonObject", () => {

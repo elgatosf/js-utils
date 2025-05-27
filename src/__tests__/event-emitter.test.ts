@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it, test, vi } from "vitest";
 
-import { type EventArgs, EventEmitter, type EventsOf } from "../event-emitter.js";
+import { type EventArgs, EventEmitter, type EventsOf } from "../index.js";
 
 describe("EventEmitter", () => {
 	describe("adding listeners", () => {

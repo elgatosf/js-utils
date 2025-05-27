@@ -1,5 +1,3 @@
-import "./promises.js";
-
 export * from "./disposable.js";
 export * from "./enumerable.js";
 export * from "./event-emitter.js";
