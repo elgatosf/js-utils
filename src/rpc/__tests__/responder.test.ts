@@ -18,8 +18,8 @@ describe("Responder", () => {
 
 		// Assert.
 		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenLastCalledWith<[Response<string[]>]>(
-			new Response(req.id, req.path, 200, ["Arthur", "Izzie", "Murphy"]),
+		expect(proxy).toHaveBeenLastCalledWith<[JsonValue]>(
+			new Response(req.id, req.path, 200, ["Arthur", "Izzie", "Murphy"]).toJSON(),
 		);
 	});
 
@@ -42,7 +42,7 @@ describe("Responder", () => {
 
 		// Assert.
 		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenLastCalledWith<[Response<JsonValue[]>]>(new Response(req.id, req.path, 500, []));
+		expect(proxy).toHaveBeenLastCalledWith<[JsonValue]>(new Response(req.id, req.path, 500, []).toJSON());
 	});
 
 	/**
@@ -61,7 +61,7 @@ describe("Responder", () => {
 
 		// Assert.
 		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenLastCalledWith<[Response]>(new Response(req.id, req.path, 501, undefined));
+		expect(proxy).toHaveBeenLastCalledWith<[JsonValue]>(new Response(req.id, req.path, 501, undefined).toJSON());
 	});
 
 	/**
@@ -81,7 +81,7 @@ describe("Responder", () => {
 
 		// Assert.
 		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenLastCalledWith<[Response]>(new Response(req.id, req.path, 200, undefined));
+		expect(proxy).toHaveBeenLastCalledWith<[JsonValue]>(new Response(req.id, req.path, 200, undefined).toJSON());
 	});
 
 	/**
@@ -104,6 +104,6 @@ describe("Responder", () => {
 
 		// Assert.
 		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenLastCalledWith<[Response]>(new Response(req.id, req.path, 200, undefined));
+		expect(proxy).toHaveBeenLastCalledWith<[JsonValue]>(new Response(req.id, req.path, 200, undefined).toJSON());
 	});
 });

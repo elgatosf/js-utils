@@ -63,7 +63,7 @@ export class Client {
 			this.#resolveRequest(new Response(id, path, 408, undefined));
 		}, timeout);
 
-		const accepted = await this.#proxy(request);
+		const accepted = await this.#proxy(request.toJSON());
 
 		// When the server did not accept the request, return a 406.
 		if (!accepted) {

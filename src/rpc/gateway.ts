@@ -108,6 +108,4 @@ export class Gateway {
  * @param value Request or response to send.
  * @returns `true` when the proxy was able to send the value; otherwise `false`.
  */
-export type GatewayProxy = (
-	value: Request<JsonValue | undefined> | Response<JsonValue | undefined>,
-) => Promise<boolean> | boolean;
+export type GatewayProxy = (value: JsonValue) => Promise<boolean> | boolean;

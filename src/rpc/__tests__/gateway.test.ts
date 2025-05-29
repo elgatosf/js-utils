@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { JsonValue } from "../../index.js";
-import { Gateway, Request, Responder, Response } from "../index.js";
+import { Gateway, Request, Responder } from "../index.js";
 
 describe("Gateway", () => {
 	/**
@@ -138,9 +138,9 @@ describe("Gateway", () => {
 		beforeEach(() => {
 			cascade = vi.fn();
 
-			client = new Gateway(async (value: Request<JsonValue> | Response<JsonValue>) => {
+			client = new Gateway(async (value: JsonValue) => {
 				try {
-					await server.receive(JSON.parse(JSON.stringify(value)), () => "Context");
+					await server.receive(value, () => "Context");
 				} catch (err) {
 					// SafeError is acceptable as it is used for "/error"
 					if (!(err instanceof SafeError)) {
@@ -151,8 +151,8 @@ describe("Gateway", () => {
 				return true;
 			});
 
-			server = new Gateway(async (value: Request<JsonValue> | Response<JsonValue>) => {
-				await client.receive(JSON.parse(JSON.stringify(value)));
+			server = new Gateway(async (value: JsonValue) => {
+				await client.receive(value);
 				return true;
 			});
 
