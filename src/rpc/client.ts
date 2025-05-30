@@ -1,16 +1,19 @@
 import type { JsonValue } from "../json.js";
-import type { GatewayProxy } from "./gateway.js";
-import { Request } from "./request.js";
-import { Response } from "./response.js";
+import { JsonRpcErrorCode } from "./json-rpc/error.js";
+import type { JsonRpcRequest } from "./json-rpc/request.js";
+import { JsonRpcResponse } from "./json-rpc/response.js";
+import type { RpcProxy } from "./proxy.js";
+import { type RequestOptions, type RequestParameters } from "./request.js";
+import { type Response, type ResponseResult } from "./response.js";
 
 /**
- * Server capable of sending requests to, and receiving responses from, a server.
+ * Client capable of sending requests to, and receiving responses from, a server.
  */
 export class Client {
 	/**
 	 * Proxy responsible for sending requests to a server.
 	 */
-	readonly #proxy: GatewayProxy;
+	readonly #proxy: RpcProxy;
 
 	/**
 	 * Requests with pending responses.
@@ -21,8 +24,40 @@ export class Client {
 	 * Initializes a new instance of the {@link Client} class.
 	 * @param proxy Proxy responsible for sending requests to a server
 	 */
-	constructor(proxy: GatewayProxy) {
+	constructor(proxy: RpcProxy) {
 		this.#proxy = proxy;
+	}
+
+	/**
+	 * Sends a notification to the listening server.
+	 * @param method Name of the method to invoke.
+	 * @param params Parameters to be used during the invocation of the method.
+	 */
+	public async notify(method: string, params?: RequestParameters): Promise<void>;
+	/**
+	 * Sends a notification to the listening server.
+	 * @param request The request.
+	 */
+	public async notify(request: RequestOptions): Promise<void>;
+	/**
+	 * Sends a notification to the listening server.
+	 * @param methodOrRequest The method name, or the request.
+	 * @param params Parameters to be used during the invocation of the method.
+	 */
+	public async notify(methodOrRequest: RequestOptions | string, params?: RequestParameters): Promise<void> {
+		if (typeof methodOrRequest === "string") {
+			await this.#proxy({
+				jsonrpc: "2.0",
+				method: methodOrRequest,
+				params,
+			} satisfies JsonRpcRequest);
+		} else {
+			await this.#proxy({
+				jsonrpc: "2.0",
+				method: methodOrRequest.method,
+				params: methodOrRequest.params,
+			} satisfies JsonRpcRequest);
+		}
 	}
 
 	/**
@@ -31,12 +66,80 @@ export class Client {
 	 * @returns `true` when the client was able to process the value as a response; otherwise `false`.
 	 */
 	public async receive(value: JsonValue): Promise<boolean> {
-		const response = Response.parse(value);
-		if (response !== undefined && this.#resolveRequest(response)) {
-			return true;
+		const { success, data: response } = JsonRpcResponse.safeParse(value);
+		if (!success) {
+			return false;
 		}
 
-		return false;
+		if ("result" in response) {
+			this.#resolve(response.id, {
+				ok: true,
+				result: response.result,
+			});
+		} else {
+			this.#resolve(response.id, {
+				ok: false,
+				error: response.error,
+			});
+		}
+
+		return true;
+	}
+
+	/**
+	 * Sends the request to the listening server.
+	 * @param method Name of the method to invoke.
+	 * @param params Parameters to be used during the invocation of the method.
+	 * @returns The response.
+	 */
+	public async request<TResult extends ResponseResult>(
+		method: string,
+		params?: RequestParameters,
+	): Promise<Response<TResult>>;
+	/**
+	 * Sends the request to the listening server.
+	 * @param request The request.
+	 * @returns The response.
+	 */
+	public async request<TResult extends ResponseResult>(request: RequestOptions): Promise<Response<TResult>>;
+	/**
+	 * Sends the request to the listening server.
+	 * @param methodOrRequest The method name, or the request.
+	 * @param params Parameters to be used during the invocation of the method.
+	 * @returns The response.
+	 */
+	public async request<TResult extends ResponseResult>(
+		methodOrRequest: RequestOptions | string,
+		params?: RequestParameters,
+	): Promise<Response<TResult>> {
+		if (typeof methodOrRequest === "string") {
+			return this.#send({
+				method: methodOrRequest,
+				params,
+			});
+		} else {
+			return this.#send(methodOrRequest);
+		}
+	}
+
+	/**
+	 * Resolves pending requests.
+	 * @param id The request identifier.
+	 * @param response The response.
+	 */
+	#resolve(id: string | undefined, response: Response): void {
+		if (id === undefined) {
+			return;
+		}
+
+		// Get the handler
+		const handler = this.#requests.get(id);
+		this.#requests.delete(id);
+
+		// Provide the result or error to the handler.
+		if (handler) {
+			handler(response);
+		}
 	}
 
 	/**
@@ -44,50 +147,44 @@ export class Client {
 	 * @param request The request.
 	 * @returns The response.
 	 */
-	public async send<T extends JsonValue, U extends JsonValue = undefined>(request: Request<T>): Promise<Response<U>> {
-		const { id, path, timeout } = request;
+	async #send<TParameters extends RequestParameters, TResult extends ResponseResult = null>(
+		request: RequestOptions<TParameters>,
+	): Promise<Response<TResult>> {
+		const id = crypto.randomUUID();
+		const { method, params, timeout } = request;
 
 		// Initialize the response handler.
-		const response = new Promise<Response<U>>((resolve) => {
-			this.#requests.set(id, (res: Response) => {
-				if (res.status !== 408) {
-					clearTimeout(timeoutMonitor);
-				}
-
-				resolve(res as Response<U>);
+		const response = new Promise<Response<TResult>>((resolve) => {
+			this.#requests.set(id, (res) => {
+				clearTimeout(timeoutMonitor);
+				resolve(res as Response<TResult>);
 			});
 		});
 
 		// Start the timeout, and send the request.
 		const timeoutMonitor = setTimeout(() => {
-			this.#resolveRequest(new Response(id, path, 408, undefined));
+			this.#resolve(id, {
+				ok: false,
+				error: {
+					code: -32603,
+					message: "The request timed out.",
+				},
+			});
 		}, timeout);
 
-		const accepted = await this.#proxy(request.toJSON());
+		const accepted = await this.#proxy({ jsonrpc: "2.0", method, params, id } satisfies JsonRpcRequest);
 
 		// When the server did not accept the request, return a 406.
 		if (!accepted) {
-			this.#resolveRequest(new Response(id, path, 406, undefined));
+			this.#resolve(id, {
+				ok: false,
+				error: {
+					code: JsonRpcErrorCode.InternalError,
+					message: "Failed to send request",
+				},
+			});
 		}
 
 		return response;
-	}
-
-	/**
-	 * Handles inbound response.
-	 * @param response The response.
-	 * @returns `true` when the response was handled; otherwise `false`.
-	 */
-	#resolveRequest(response: Response): boolean {
-		const handler = this.#requests.get(response.id);
-		this.#requests.delete(response.id);
-
-		// Determine if there is a request pending a response.
-		if (handler) {
-			handler(response);
-			return true;
-		}
-
-		return false;
 	}
 }

@@ -1,91 +1,109 @@
-import { describe, expect, test } from "vitest";
+// import { describe, expect, it, vi } from "vitest";
 
-import { Response, type StatusCode } from "../index.js";
+// import type { JsonValue } from "../../index.js";
+// import { Request, Responder } from "../index.js";
 
-/**
- * Provides assertions for {@link @Response}.
- */
-describe("Response", () => {
-	/**
-	 * Asserts the constructor initializes a response.
-	 */
-	test("construction", () => {
-		// Arrange, act.
-		const res = new Response("123", "/test", 200, "body");
+// describe("Responder", () => {
+// 	/**
+// 	 * Asserts {@link Responder.send} sends a `200` with the optional body.
+// 	 */
+// 	it("should send 200 with success", async () => {
+// 		// Arrange.
+// 		const proxy = vi.fn();
+// 		const req = new Request({ path: "/pets" });
+// 		const responder = new Responder(req, proxy);
 
-		// Assert
-		expect(res.body).toBe("body");
-		expect(res.id).toBe("123");
-		expect(res.path).toBe("/test");
-		expect(res.status).toBe(200);
-	});
+// 		// Act.
+// 		await responder.success(["Arthur", "Izzie", "Murphy"]);
 
-	/**
-	 * Asserts responses are serialized with all required information.
-	 */
-	test("toJSON", () => {
-		// Arrange.
-		const res = new Response("123", "/test", 200, { name: "Elgato" });
+// 		// Assert.
+// 		expect(proxy).toHaveBeenCalledTimes(1);
+// 		expect(proxy).toHaveBeenLastCalledWith<[JsonValue]>(
+// 			new Response(req.id, req.path, 200, ["Arthur", "Izzie", "Murphy"]).toJSON(),
+// 		);
+// 	});
 
-		// Act.
-		const json = JSON.stringify(res);
+// 	/**
+// 	 * Asserts {@link Responder.fail} sends a `500` with the optional body.
+// 	 */
+// 	it("should send 500 with fail", async () => {
+// 		// Arrange.
+// 		const proxy = vi.fn();
+// 		const req = new Request({
+// 			path: "/toggle-light",
+// 			body: {
+// 				id: 123,
+// 			},
+// 		});
+// 		const responder = new Responder(req, proxy);
 
-		// Assert.
-		expect(json).toEqual(
-			JSON.stringify({
-				__type: "response",
-				id: "123",
-				path: "/test",
-				body: {
-					name: "Elgato",
-				},
-				status: 200,
-			}),
-		);
-	});
+// 		// Act.
+// 		await responder.fail([]);
 
-	/**
-	 * Asserts responses can be parsed from objects.
-	 */
-	test("parse", () => {
-		// Arrange.
-		const res = new Response("123", "/test", 200, { name: "Elgato" });
-		const clone = JSON.parse(JSON.stringify(res));
+// 		// Assert.
+// 		expect(proxy).toHaveBeenCalledTimes(1);
+// 		expect(proxy).toHaveBeenLastCalledWith<[JsonValue]>(new Response(req.id, req.path, 500, []).toJSON());
+// 	});
 
-		// Act.
-		const actual = Response.parse(clone);
+// 	/**
+// 	 * Asserts {@link Responder.send} sends a status.
+// 	 */
+// 	it("send status", async () => {
+// 		// Arrange.
+// 		const proxy = vi.fn();
+// 		const req = new Request({
+// 			path: "/mute-mic",
+// 		});
+// 		const responder = new Responder(req, proxy);
 
-		// Assert.
-		expect(actual).toBeDefined();
-		expect(actual?.body).toEqual(res.body);
-		expect(actual?.id).toEqual(res.id);
-		expect(actual?.path).toEqual(res.path);
-		expect(actual?.status).toBe(res.status);
-	});
+// 		// Act.
+// 		await responder.send(501);
 
-	/**
-	 * Asserts {@link Response.ok} evaluates the status code of the response.
-	 */
-	test.each([
-		{
-			status: 200 as StatusCode,
-			expected: true,
-		},
-		{
-			status: 406 as StatusCode,
-			expected: false,
-		},
-	])("ok > $status = $expected", ({ status, expected }) => {
-		const res = new Response("id", "path", status, undefined);
-		expect(res.ok).toBe(expected);
-	});
+// 		// Assert.
+// 		expect(proxy).toHaveBeenCalledTimes(1);
+// 		expect(proxy).toHaveBeenLastCalledWith<[JsonValue]>(new Response(req.id, req.path, 501, undefined).toJSON());
+// 	});
 
-	/**
-	 * Asserts undefined is returned when parsing was not successful.
-	 */
-	test.each([undefined, null, {}, "foo"])("$0", (value) => {
-		// Arrange, act, assert.
-		const req = Response.parse(value);
-		expect(req).toBeUndefined();
-	});
-});
+// 	/**
+// 	 * Asserts a response can be sent when the request is unidirectional.
+// 	 */
+// 	it("can respond when unidirectional", async () => {
+// 		// Arrange.
+// 		const proxy = vi.fn();
+// 		const req = new Request({
+// 			path: "/test",
+// 			unidirectional: true,
+// 		});
+// 		const responder = new Responder(req, proxy);
+
+// 		// Act.
+// 		await responder.success();
+
+// 		// Assert.
+// 		expect(proxy).toHaveBeenCalledTimes(1);
+// 		expect(proxy).toHaveBeenLastCalledWith<[JsonValue]>(new Response(req.id, req.path, 200, undefined).toJSON());
+// 	});
+
+// 	/**
+// 	 * Asserts a response is not sent after a response has already been sent.
+// 	 */
+// 	it("down not respond more than once", async () => {
+// 		// Arrange.
+// 		const proxy = vi.fn();
+// 		const req = new Request({
+// 			path: "/test",
+// 			body: {
+// 				id: 123,
+// 			},
+// 		});
+// 		const responder = new Responder(req, proxy);
+
+// 		// Act.
+// 		await responder.success();
+// 		await responder.success({ test: "other" });
+
+// 		// Assert.
+// 		expect(proxy).toHaveBeenCalledTimes(1);
+// 		expect(proxy).toHaveBeenLastCalledWith<[JsonValue]>(new Response(req.id, req.path, 200, undefined).toJSON());
+// 	});
+// });

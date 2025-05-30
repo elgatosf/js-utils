@@ -1,94 +1,113 @@
-import { z } from "zod/v4-mini";
-
-import type { JsonObject, JsonValue } from "../json.js";
-import type { StatusCode } from "./status.js";
-
-const TYPE_ID = "response";
+import type { JsonObject, JsonPrimitive, JsonValue } from "../json.js";
+import type { JsonRpcError } from "./json-rpc/error.js";
+import type { JsonRpcResponse } from "./json-rpc/response.js";
+import type { RpcProxy } from "./proxy.js";
 
 /**
- * Schema of a response.
+ * Response object sent from a server.
  */
-const schema = z.object({
-	__type: z.literal(TYPE_ID),
-	id: z.string(),
-	path: z.string(),
-	body: z.optional(z.any()),
-	status: z.union([
-		z.literal(200),
-		z.literal(202),
-		z.literal(406),
-		z.literal(408),
-		z.literal(500),
-		z.literal(501),
-	]),
-});
+export type Response<T extends ResponseResult = ResponseResult> =
+	| {
+			/**
+			 * Result of the request.
+			 */
+			readonly result: T;
+
+			/**
+			 * Determines whether the request was successful.
+			 */
+			readonly ok: true;
+	  }
+	| {
+			/**
+			 * The error that occurred.
+			 */
+			readonly error: JsonRpcError;
+
+			/**
+			 * Determines whether the request was successful.
+			 */
+			readonly ok: false;
+	  };
 
 /**
- * Response to an RPC request.
+ * Type of a result contained within a response.
  */
-export class Response<T extends JsonValue = undefined> {
+export type ResponseResult = Exclude<JsonPrimitive, undefined> | JsonObject | JsonValue[];
+
+/**
+ * Responder responsible for responding to a request.
+ */
+export class Responder {
 	/**
-	 * Optional body returned by the server.
+	 * Identifier of the request.
 	 */
-	public readonly body: T;
+	readonly #id: string | undefined;
 
 	/**
-	 * Original request identifier.
+	 * Proxy responsible for sending the response to the client.
 	 */
-	public readonly id: string;
+	readonly #proxy: RpcProxy;
 
 	/**
-	 * Original request path.
+	 * Indicates whether a response has already been sent in relation to the response.
 	 */
-	public readonly path: string;
+	#responded = false;
 
 	/**
-	 * Status code that represents the overall status of the response.
+	 * Initializes a new instance of the {@link Responder} class.
+	 * @param proxy Proxy responsible for forwarding the response to the client.
+	 * @param id Identifier of the request.
 	 */
-	public readonly status: StatusCode;
-
-	/**
-	 * Initializes a new instance of the {@link Response} class.
-	 * @param id Original request identifier
-	 * @param path Original request path.
-	 * @param status Status code that represents the overall status of the response.
-	 * @param body Optional body returned by the server.
-	 */
-	constructor(id: string, path: string, status: StatusCode, body: T) {
-		this.id = id;
-		this.path = path;
-		this.status = status;
-		this.body = body;
+	constructor(proxy: RpcProxy, id: string | undefined) {
+		this.#proxy = proxy;
+		this.#id = id;
 	}
 
 	/**
-	 * Indicates whether the request was successful.
-	 * @returns `true` when the status indicates a success; otherwise `false`.
+	 * Indicates whether a response can be sent.
+	 * @returns `true` when a response has not yet been set.
 	 */
-	public get ok(): boolean {
-		return this.status >= 200 && this.status < 300;
+	public get canRespond(): boolean {
+		return !this.#responded;
 	}
 
 	/**
-	 * Parses the response from the specified value.
-	 * @param value Value to parse.
-	 * @returns The parsed response; otherwise `undefined`.
+	 * Sends an error response to the client.
+	 * @param error The error.
+	 * @returns Promise fulfilled once the response has been sent.
 	 */
-	public static parse<T extends JsonValue = undefined>(value: JsonValue): Response<T> | undefined {
-		const { success, data } = schema.safeParse(value);
-		if (success) {
-			return new Response(data.id, data.path, data.status, data.body);
+	public error(error: JsonRpcError): Promise<void> {
+		return this.#send({
+			jsonrpc: "2.0",
+			id: this.#id,
+			error,
+		});
+	}
+
+	/**
+	 * Sends the result to the client.
+	 * @param result The result.
+	 * @returns Promise fulfilled once the response has been sent.
+	 */
+	public async success(result: ResponseResult): Promise<void> {
+		if (this.#id) {
+			await this.#send({
+				jsonrpc: "2.0",
+				id: this.#id,
+				result,
+			});
 		}
-
-		return undefined;
 	}
 
 	/**
-	 * Gets the serializable value.
-	 * @returns The value.
+	 * Sends the response to the client.
+	 * @param res The response.
 	 */
-	public toJSON(): JsonObject {
-		const { id, path, body, status } = this;
-		return { __type: TYPE_ID, id, path, body, status } satisfies z.infer<typeof schema>;
+	async #send(res: JsonRpcResponse): Promise<void> {
+		if (this.canRespond) {
+			await this.#proxy(res);
+			this.#responded = true;
+		}
 	}
 }

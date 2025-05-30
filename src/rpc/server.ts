@@ -1,9 +1,11 @@
 import type { IDisposable } from "../disposable.js";
 import { EventEmitter } from "../event-emitter.js";
 import type { JsonValue } from "../json.js";
-import type { GatewayProxy } from "./gateway.js";
-import { Request } from "./request.js";
-import { Responder } from "./responder.js";
+import { JsonRpcErrorCode } from "./json-rpc/error.js";
+import { JsonRpcRequest } from "./json-rpc/request.js";
+import type { RpcProxy } from "./proxy.js";
+import type { RequestParameters } from "./request.js";
+import { Responder, type ResponseResult } from "./response.js";
 
 /**
  * Server capable of receiving requests from, and sending responses to, a client.
@@ -12,68 +14,54 @@ export class Server {
 	/**
 	 * Proxy responsible for sending responses to a client.
 	 */
-	readonly #proxy: GatewayProxy;
+	readonly #proxy: RpcProxy;
 
 	/**
-	 * Registered routes, and their respective handlers.
+	 * Registered methods, and their respective handlers.
 	 */
-	readonly #routes = new EventEmitter();
+	readonly #methods = new EventEmitter();
 
 	/**
 	 * Initializes a new instance of the {@link Server} class.
 	 * @param proxy Proxy responsible for sending responses to a client.
 	 */
-	constructor(proxy: GatewayProxy) {
+	constructor(proxy: RpcProxy) {
 		this.#proxy = proxy;
 	}
 
 	/**
-	 * Attempts to process the specified request received from the client.
-	 * @param value Value to process.
-	 * @param contextProvider Optional context provider, provided to route handlers when responding to requests.
-	 * @returns `true` when the server was able to process the request; otherwise `false`.
-	 */
-	public async receive<TContext = undefined>(value: JsonValue, contextProvider?: () => TContext): Promise<boolean> {
-		const request = Request.parse(value);
-		if (request !== undefined) {
-			contextProvider ??= (): TContext => undefined!;
-			if (await this.#routeRequest(request, contextProvider)) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Maps the specified path to the handler, allowing for requests from the client.
-	 * @param path Path used to identify the route.
+	 * Maps the specified method name to a method, allowing for requests from a client.
+	 * @param name Name of the method.
 	 * @param handler Handler to be invoked when the request is received.
-	 * @param options Optional routing configuration.
-	 * @returns Disposable capable of removing the route handler.
+	 * @param options Optional configuration.
+	 * @returns Disposable capable of removing the handler.
 	 */
-	public route<TRequest extends JsonValue, TContext>(
-		path: string,
-		handler: RouteHandler<TRequest, TContext>,
-		options?: RouteConfiguration<TContext>,
+	public add<TParameters extends RequestParameters, TContext>(
+		name: string,
+		handler: MethodHandler<TParameters, TContext>,
+		options?: MethodConfiguration<TContext>,
 	): IDisposable {
 		options = { filter: (): boolean => true, ...options };
 
-		return this.#routes.disposableOn(
-			path,
-			async ({ context, request, responder, resolve }: RouteResolver<TRequest, TContext>) => {
+		return this.#methods.disposableOn(
+			name,
+			async ({ context, parameters, responder, resolve }: RequestResolver<TParameters, TContext>) => {
 				if (options?.filter && options.filter(context)) {
-					await resolve();
+					resolve();
 
 					try {
 						// Invoke the handler; when data was returned, propagate it as part of the response (if there wasn't already a response).
-						const result = await handler(request, responder, context);
+						const result = await handler(parameters, responder, context);
 						if (result !== undefined) {
-							await responder.send(200, result);
+							await responder.success(result);
 						}
 					} catch (err) {
 						// Respond with an error before throwing.
-						await responder.send(500);
+						await responder.error({
+							code: JsonRpcErrorCode.InternalError,
+							message: err instanceof Object ? err.toString() : "Unknown error",
+						});
+
 						throw err;
 					}
 				}
@@ -82,94 +70,117 @@ export class Server {
 	}
 
 	/**
+	 * Attempts to process the specified request received from a client.
+	 * @param value Value to process.
+	 * @param contextProvider Optional context provider, provided to the handlers when responding to requests.
+	 * @returns `true` when the server was able to process the request; otherwise `false`.
+	 */
+	public async receive<TContext = undefined>(value: JsonValue, contextProvider?: () => TContext): Promise<boolean> {
+		const { success, data: request } = JsonRpcRequest.safeParse(value);
+		if (!success) {
+			return false;
+		}
+
+		const responder = new Responder(this.#proxy, request.id);
+		contextProvider ??= (): TContext => undefined!;
+
+		if (await this.#route(request, responder, contextProvider)) {
+			return true;
+		} else {
+			await responder.error({
+				code: JsonRpcErrorCode.MethodNotFound,
+				message: "The method does not exist or is not available.",
+			});
+		}
+
+		return false;
+	}
+
+	/**
 	 * Handles inbound requests.
 	 * @param request The request.
-	 * @param contextProvider Optional context provider, provided to route handlers when responding to requests.
+	 * @param responder The responder responsible for responding to the client.
+	 * @param contextProvider Optional context provider, provided to handlers when responding to requests.
 	 * @returns `true` when the request was handled; otherwise `false`.
 	 */
-	async #routeRequest<TRequest extends JsonValue, TContext>(
-		request: Request<TRequest>,
+	async #route<TParameters extends RequestParameters, TContext>(
+		request: JsonRpcRequest,
+		responder: Responder,
 		contextProvider: () => TContext,
 	): Promise<boolean> {
-		const responder = new Responder(request, this.#proxy);
+		let routed = false;
 
 		// Get handlers of the path, and invoke them; filtering is applied by the handlers themselves
-		let resolved = false;
-		const routes = this.#routes.listeners(request.path) as ((ev: RouteResolver<TRequest, TContext>) => Promise<void>)[];
 		const context = contextProvider();
+		const methods = this.#methods.listeners(request.method) as ((
+			ev: RequestResolver<TParameters, TContext>,
+		) => Promise<void>)[];
 
-		for (const route of routes) {
-			await route({
+		for (const method of methods) {
+			await method({
 				context,
-				request,
+				parameters: request.params as unknown as TParameters,
 				responder,
-				resolve: async (): Promise<void> => {
-					// Flags the path as handled, sending an immediate 202 if the request was unidirectional.
-					if (request.unidirectional) {
-						await responder.send(202);
-					}
-
-					resolved = true;
+				resolve: (): void => {
+					routed = true;
 				},
 			});
 		}
 
-		// The request was successfully routed, so fallback to a 200.
-		if (resolved) {
-			await responder.send(200);
+		// The request was successfully routed.
+		if (routed) {
+			await responder.success(null);
 			return true;
 		}
 
-		// When there were no applicable routes, return not-handled.
-		await responder.send(501);
 		return false;
 	}
 }
 
 /**
- * Configuration that defines the route.
+ * Configuration that defines the method.
  */
-export type RouteConfiguration<TContext> = {
+export type MethodConfiguration<TContext> = {
 	/**
-	 * Optional filter used to determine if a request can be routed; when `true`, the route handler will be called.
+	 * Optional filter used to determine if a request can be routed; when `true`, the handler will be called.
 	 * @param context Context associated with the request.
 	 * @returns Should return `true` when the request can be handled; otherwise `false`.
 	 */
-	filter?: (source: TContext) => boolean;
+	filter?: (context: TContext) => boolean;
 };
 
 /**
- * Function responsible for handling a request, and providing a response.
- * @template TRequest Type of the request body.
- * @template TContext Type of the context provided to the route handler when receiving requests.
+ * Function responsible for handling a request, and providing a result.
+ * @template TParameters Type of the parameter sent with the request.
+ * @template TContext Type of the context provided to the method handler when receiving requests.
  */
-export type RouteHandler<TRequest extends JsonValue = undefined, TContext = undefined> = (
-	request: Request<TRequest>,
-	responder: Responder<TRequest>,
+export type MethodHandler<TParameters extends RequestParameters = undefined, TContext = undefined> = (
+	parameters: TParameters,
+	responder: Responder,
 	context: TContext,
-) => JsonValue | Promise<JsonValue | void> | void;
+) => Promise<ResponseResult | void> | ResponseResult | void;
 
 /**
  * Contains information about a request, and the ability to resolve it.
  */
-type RouteResolver<TBody extends JsonValue, TContext> = {
+type RequestResolver<TParameters extends RequestParameters, TContext> = {
 	/**
-	 * Context provided to the route handler when receiving a request.
+	 * Optional context provided to the handler when receiving a request.
 	 */
 	context: TContext;
 
 	/**
-	 * The request.
+	 * The request parameters.
 	 */
-	request: Request<TBody>;
+	parameters: TParameters;
 
 	/**
 	 * Responder responsible for sending a response.
 	 */
-	responder: Responder<TBody>;
+	responder: Responder;
 
 	/**
 	 * Resolves the request, marking it as fulfilled.
 	 */
-	resolve(): Promise<void>;
+	resolve(): void;
 };
