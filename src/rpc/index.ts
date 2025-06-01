@@ -1,3 +1,7 @@
+export * from "./json-rpc/error.js";
+export * from "./json-rpc/request.js";
+export * from "./json-rpc/response.js";
+
 export * from "./client.js";
 export * from "./gateway.js";
 export * from "./proxy.js";

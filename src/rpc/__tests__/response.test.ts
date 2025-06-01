@@ -1,109 +1,106 @@
-// import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-// import type { JsonValue } from "../../index.js";
-// import { Request, Responder } from "../index.js";
+import { type JsonRpcErrorResponse, JsonRpcResponse, RpcRequestResponder } from "../index.js";
 
-// describe("Responder", () => {
-// 	/**
-// 	 * Asserts {@link Responder.send} sends a `200` with the optional body.
-// 	 */
-// 	it("should send 200 with success", async () => {
-// 		// Arrange.
-// 		const proxy = vi.fn();
-// 		const req = new Request({ path: "/pets" });
-// 		const responder = new Responder(req, proxy);
+/**
+ * Describes {@link RpcRequestResponder}.
+ */
+describe("RpcRequestResponder", () => {
+	it("can respond by default", () => {
+		// Arrange, act.
+		const res = new RpcRequestResponder(vi.fn(), undefined);
 
-// 		// Act.
-// 		await responder.success(["Arthur", "Izzie", "Murphy"]);
+		// Assert.
+		expect(res.canRespond).toBe(true);
+	});
 
-// 		// Assert.
-// 		expect(proxy).toHaveBeenCalledTimes(1);
-// 		expect(proxy).toHaveBeenLastCalledWith<[JsonValue]>(
-// 			new Response(req.id, req.path, 200, ["Arthur", "Izzie", "Murphy"]).toJSON(),
-// 		);
-// 	});
+	/**
+	 * Asserts success can be sent with an id.
+	 */
+	it("can send success with id", async () => {
+		// Arrange.
+		const proxy = vi.fn();
+		const res = new RpcRequestResponder(proxy, "123");
 
-// 	/**
-// 	 * Asserts {@link Responder.fail} sends a `500` with the optional body.
-// 	 */
-// 	it("should send 500 with fail", async () => {
-// 		// Arrange.
-// 		const proxy = vi.fn();
-// 		const req = new Request({
-// 			path: "/toggle-light",
-// 			body: {
-// 				id: 123,
-// 			},
-// 		});
-// 		const responder = new Responder(req, proxy);
+		// ACt
+		await res.success("Hello world");
 
-// 		// Act.
-// 		await responder.fail([]);
+		// Assert
+		expect(res.canRespond).toBe(false);
+		expect(proxy).toHaveBeenCalledTimes(1);
+		expect(proxy).toHaveBeenCalledWith<[JsonRpcResponse]>({
+			jsonrpc: "2.0",
+			result: "Hello world",
+			id: "123",
+		});
+	});
 
-// 		// Assert.
-// 		expect(proxy).toHaveBeenCalledTimes(1);
-// 		expect(proxy).toHaveBeenLastCalledWith<[JsonValue]>(new Response(req.id, req.path, 500, []).toJSON());
-// 	});
+	/**
+	 * Asserts success cannot be sent without an id.
+	 */
+	it("can only send success with id", async () => {
+		// Arrange.
+		const proxy = vi.fn();
+		const res = new RpcRequestResponder(proxy, undefined);
 
-// 	/**
-// 	 * Asserts {@link Responder.send} sends a status.
-// 	 */
-// 	it("send status", async () => {
-// 		// Arrange.
-// 		const proxy = vi.fn();
-// 		const req = new Request({
-// 			path: "/mute-mic",
-// 		});
-// 		const responder = new Responder(req, proxy);
+		// ACt
+		await res.success("Hello world");
 
-// 		// Act.
-// 		await responder.send(501);
+		// Assert
+		expect(res.canRespond).toBe(true);
+		expect(proxy).toHaveBeenCalledTimes(0);
+	});
 
-// 		// Assert.
-// 		expect(proxy).toHaveBeenCalledTimes(1);
-// 		expect(proxy).toHaveBeenLastCalledWith<[JsonValue]>(new Response(req.id, req.path, 501, undefined).toJSON());
-// 	});
+	describe.each([
+		{ id: "123" },
+		{ id: undefined },
+	])("with id: $id", ({ id }) => {
+		/**
+		 * Asserts errors can be sent.
+		 */
+		it("can send error", async () => {
+			// Arrange.
+			const proxy = vi.fn();
+			const res = new RpcRequestResponder(proxy, id);
 
-// 	/**
-// 	 * Asserts a response can be sent when the request is unidirectional.
-// 	 */
-// 	it("can respond when unidirectional", async () => {
-// 		// Arrange.
-// 		const proxy = vi.fn();
-// 		const req = new Request({
-// 			path: "/test",
-// 			unidirectional: true,
-// 		});
-// 		const responder = new Responder(req, proxy);
+			// Act.
+			await res.error({
+				code: 123,
+				message: "Something went wrong",
+			});
 
-// 		// Act.
-// 		await responder.success();
+			// Assert.
+			expect(res.canRespond).toBe(false);
+			expect(proxy).toHaveBeenCalledTimes(1);
+			expect(proxy).toHaveBeenCalledWith<[JsonRpcErrorResponse]>({
+				jsonrpc: "2.0",
+				error: {
+					code: 123,
+					message: "Something went wrong",
+				},
+				id,
+			});
+		});
 
-// 		// Assert.
-// 		expect(proxy).toHaveBeenCalledTimes(1);
-// 		expect(proxy).toHaveBeenLastCalledWith<[JsonValue]>(new Response(req.id, req.path, 200, undefined).toJSON());
-// 	});
+		/**
+		 * Asserts successive messages cannot be sent.
+		 */
+		it("cannot send successive responses", async () => {
+			// Arrange.
+			const proxy = vi.fn();
+			const res = new RpcRequestResponder(proxy, id);
 
-// 	/**
-// 	 * Asserts a response is not sent after a response has already been sent.
-// 	 */
-// 	it("down not respond more than once", async () => {
-// 		// Arrange.
-// 		const proxy = vi.fn();
-// 		const req = new Request({
-// 			path: "/test",
-// 			body: {
-// 				id: 123,
-// 			},
-// 		});
-// 		const responder = new Responder(req, proxy);
+			// Act.
+			for (let i = 0; i < 3; i++) {
+				await res.error({
+					code: 123,
+					message: "Something went wrong",
+				});
+			}
 
-// 		// Act.
-// 		await responder.success();
-// 		await responder.success({ test: "other" });
-
-// 		// Assert.
-// 		expect(proxy).toHaveBeenCalledTimes(1);
-// 		expect(proxy).toHaveBeenLastCalledWith<[JsonValue]>(new Response(req.id, req.path, 200, undefined).toJSON());
-// 	});
-// });
+			// Assert.
+			expect(res.canRespond).toBe(false);
+			expect(proxy).toHaveBeenCalledTimes(1);
+		});
+	});
+});

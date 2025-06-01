@@ -6,7 +6,7 @@ import type { RpcProxy } from "./proxy.js";
 /**
  * Response object sent from a server.
  */
-export type Response<T extends ResponseResult = ResponseResult> =
+export type RpcResponse<T extends RpcResponseResult = RpcResponseResult> =
 	| {
 			/**
 			 * Result of the request.
@@ -33,12 +33,12 @@ export type Response<T extends ResponseResult = ResponseResult> =
 /**
  * Type of a result contained within a response.
  */
-export type ResponseResult = Exclude<JsonPrimitive, undefined> | JsonObject | JsonValue[];
+export type RpcResponseResult = Exclude<JsonPrimitive, undefined> | JsonObject | JsonValue[];
 
 /**
  * Responder responsible for responding to a request.
  */
-export class Responder {
+export class RpcRequestResponder {
 	/**
 	 * Identifier of the request.
 	 */
@@ -55,7 +55,7 @@ export class Responder {
 	#responded = false;
 
 	/**
-	 * Initializes a new instance of the {@link Responder} class.
+	 * Initializes a new instance of the {@link RpcRequestResponder} class.
 	 * @param proxy Proxy responsible for forwarding the response to the client.
 	 * @param id Identifier of the request.
 	 */
@@ -90,7 +90,7 @@ export class Responder {
 	 * @param result The result.
 	 * @returns Promise fulfilled once the response has been sent.
 	 */
-	public async success(result: ResponseResult): Promise<void> {
+	public async success(result: RpcResponseResult): Promise<void> {
 		if (this.#id) {
 			await this.#send({
 				jsonrpc: "2.0",

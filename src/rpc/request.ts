@@ -3,7 +3,7 @@ import type { JsonObject, JsonValue } from "../json.js";
 /**
  * Request options.
  */
-export type RequestOptions<T extends RequestParameters = undefined> = {
+export type RpcRequestOptions = {
 	/**
 	 * Name of the method to be invoked.
 	 */
@@ -12,7 +12,7 @@ export type RequestOptions<T extends RequestParameters = undefined> = {
 	/**
 	 * Parameters to be used during the invocation of the method.
 	 */
-	params?: T;
+	params?: RpcRequestParameters;
 
 	/**
 	 * Timeout duration in milliseconds; defaults to `5000` (5s).
@@ -23,4 +23,4 @@ export type RequestOptions<T extends RequestParameters = undefined> = {
 /**
  * Parameters that can be sent with a request.
  */
-export type RequestParameters = JsonObject | JsonValue[] | undefined;
+export type RpcRequestParameters = JsonObject | JsonValue[] | undefined;

@@ -1,220 +1,76 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { type JsonValue, type PromiseResolvers, withResolvers } from "../../index.js";
-import { Client, Server } from "../index.js";
+import { RpcClient } from "../client.js";
+import { RpcGateway } from "../gateway.js";
+import { RpcServer } from "../server.js";
 
-describe("fetch e2e", () => {
-	let client!: Client;
-	let server!: Server;
-	let cascade!: (value: string) => void;
-	let notified!: PromiseResolvers<MockData>;
-
-	beforeEach(() => {
-		cascade = vi.fn();
-		notified = withResolvers<MockData>();
-
-		client = new Client(async (value: JsonValue) => {
-			try {
-				await server.receive(value, () => "Context");
-			} catch (err) {
-				// SafeError is acceptable as it is used for "/error"
-				if (!(err instanceof SafeError)) {
-					throw err;
-				}
-			}
-
-			return true;
-		});
-
-		server = new Server(async (value: JsonValue) => {
-			await client.receive(value);
-			return true;
-		});
-
-		server.add("/async", () => {
-			return Promise.resolve(["Mario", "Luigi", "Peach"]);
-		});
-
-		server.add("/test", (_, res) => {
-			res.success({
-				name: "Elgato",
-			});
-		});
-
-		server.add("/error", () => {
-			throw new SafeError();
-		});
-
-		server.add("/cascade", () => {
-			cascade("First");
-			return true;
-		});
-
-		server.add("/cascade", () => {
-			cascade("Second");
-			return false;
-		});
-
-		server.add("/notify", (params: MockData) => notified.resolve(params));
+/**
+ * Describes {@link RpcGateway}.
+ */
+describe("RpcGateway", () => {
+	/**
+	 * Asserts a gateway as a client and server.
+	 */
+	it("has client and server", () => {
+		const gateway = new RpcGateway(vi.fn());
+		expect(gateway.client).instanceOf(RpcClient);
+		expect(gateway.server).instanceOf(RpcServer);
 	});
-
-	afterEach(() => vi.resetAllMocks());
 
 	/**
-	 * Test known routes.
+	 * Asserts the client and server attempt to receive a message in order.
 	 */
-	describe("known routes", () => {
-		/**
-		 * Asserts a request receives a response.
-		 */
-		it("requests get responses", async () => {
-			// Arrange, act.
-			const res = await client.request("/test");
+	it("propagates receiving message", async () => {
+		// Arrange.
+		const gateway = new RpcGateway(vi.fn());
+		const clientSpy = vi.spyOn(gateway.client, "receive");
+		const serverSpy = vi.spyOn(gateway.server, "receive");
 
-			// Assert.
-			expect(res.ok).toBe(true);
-			if (res.ok) {
-				expect(res.result).toEqual({ name: "Elgato" });
-			}
-		});
+		// Act.
+		const contextProvider = vi.fn();
+		await gateway.receive("foo", contextProvider);
 
-		/**
-		 * Asserts a notification invokes the method without a response.
-		 */
-		it("notify invoke method", async () => {
-			// Arrange, act.
-			await client.notify("/notify", {
-				name: "Elgato",
-			});
-
-			// Assert.
-			expect(notified.promise).resolves.toEqual({ name: "Elgato" });
-		});
-
-		/**
-		 * Asserts the response contains the data of a handler that returns a promise.
-		 */
-		it("data with promise result", async () => {
-			// Arrange, act.
-			const res = await client.request<MockData>("/async", {
-				name: "Elgato",
-			});
-
-			// Assert.
-			expect(res.ok).toBe(true);
-			if (res.ok) {
-				expect(res.result).toEqual(["Mario", "Luigi", "Peach"]);
-			}
-		});
-
-		// /**
-		//  * Asserts a response of `500` for an error thrown by the handler.
-		//  */
-		// it("500 on error", async () => {
-		// 	// Arrange, act.
-		// 	const { body, ok, status } = await client.send("/error");
-
-		// 	// Assert.
-		// 	expect(status).toBe(500);
-		// 	expect(ok).toBeFalsy();
-		// 	expect(body).toBeUndefined();
-		// });
-
-		// /**
-		//  * Asserts a response of `202` for an error thrown by the handler on a unidirectional request.
-		//  */
-		// it("202 on error (unidirectional request)", async () => {
-		// 	// Arrange, act.
-		// 	const { body, ok, status } = await client.send({
-		// 		path: "/error",
-		// 		unidirectional: true,
-		// 	});
-
-		// 	// Assert.
-		// 	expect(status).toBe(202);
-		// 	expect(ok).toBeTruthy();
-		// 	expect(body).toBeUndefined();
-		// });
-
-		// /**
-		//  * Asserts a response of `408` for a timeout.
-		//  */
-		// it("408 on timeout", async () => {
-		// 	// Arrange.
-		// 	// @ts-expect-error setTimeout should return Nodejs.Timeout, but we aren't using it, so its fine.
-		// 	const spyOnSetTimeout = vi.spyOn(global, "setTimeout").mockImplementation((fn) => fn());
-		// 	const spyOnClearTimeout = vi.spyOn(global, "clearTimeout");
-
-		// 	// Act.
-		// 	const res = client.send({
-		// 		path: "/test",
-		// 		timeout: 1,
-		// 	});
-
-		// 	const { body, ok, status } = await res;
-
-		// 	// Assert.
-		// 	expect(status).toBe(408);
-		// 	expect(ok).toBeFalsy();
-		// 	expect(body).toBeUndefined();
-		// 	expect(spyOnSetTimeout).toHaveBeenCalledWith(expect.any(Function), 1);
-		// 	expect(spyOnClearTimeout).toHaveBeenCalledTimes(0);
-		// });
+		// Assert.
+		expect(clientSpy).toHaveBeenCalledExactlyOnceWith("foo");
+		expect(serverSpy).toHaveBeenCalledExactlyOnceWith("foo", contextProvider);
+		expect(clientSpy).toHaveBeenCalledBefore(serverSpy);
 	});
 
-	// /**
-	//  * Test unknown routes.
-	//  */
-	// describe("unknown routes", () => {
-	// 	/**
-	// 	 * Asserts a response of `501` for unknown paths.
-	// 	 */
-	// 	it("501 on unknown routes", async () => {
-	// 		// Arrange, act.
-	// 		const { body, ok, status } = await client.send("/unknown");
+	/**
+	 * Asserts a successful client parse returns true.
+	 */
+	it("returns success if the client can receive", async () => {
+		// Arrange.
+		const gateway = new RpcGateway(vi.fn());
+		const clientSpy = vi.spyOn(gateway.client, "receive").mockReturnValue(Promise.resolve(true));
+		const serverSpy = vi.spyOn(gateway.server, "receive");
 
-	// 		// Assert.
-	// 		expect(status).toBe(501);
-	// 		expect(ok).toBeFalsy();
-	// 		expect(body).toBeUndefined();
-	// 	});
+		// Act.
+		const contextProvider = vi.fn();
+		const success = await gateway.receive("foo", contextProvider);
 
-	// 	/**
-	// 	 * Asserts a response of `501` for unknown paths (unidirectional request).
-	// 	 */
-	// 	it("501 on unknown routes (unidirectional request)", async () => {
-	// 		// Arrange, act.
-	// 		const { body, ok, status } = await client.send({
-	// 			path: "/unknown",
-	// 			unidirectional: true,
-	// 		});
+		// Assert.
+		expect(success).toBe(true);
+		expect(clientSpy).toHaveBeenCalledExactlyOnceWith("foo");
+		expect(serverSpy).not.toHaveBeenCalled();
+	});
 
-	// 		// Assert.
-	// 		expect(status).toBe(501);
-	// 		expect(ok).toBeFalsy();
-	// 		expect(body).toBeUndefined();
-	// 	});
-	// });
+	/**
+	 * Asserts a successful server parse returns true.
+	 */
+	it("returns success if the server can receive", async () => {
+		// Arrange.
+		const gateway = new RpcGateway(vi.fn());
+		const clientSpy = vi.spyOn(gateway.client, "receive");
+		const serverSpy = vi.spyOn(gateway.server, "receive").mockReturnValue(Promise.resolve(true));
 
-	// /**
-	//  * Asserts {@link Gateway.send} executes all paths, but does not respond more than once.
-	//  */
-	// it("should execute all, but return after the first", async () => {
-	// 	// Arrange, act.
-	// 	const { body, ok, status } = await client.send("/cascade");
+		// Act.
+		const contextProvider = vi.fn();
+		const success = await gateway.receive("foo", contextProvider);
 
-	// 	// Assert.
-	// 	expect(status).toBe(200);
-	// 	expect(ok).toBe(true);
-	// 	expect(body).toBe(true);
-	// 	expect(cascade).toHaveBeenCalledTimes(2);
-	// 	expect(cascade).toHaveBeenNthCalledWith(1, "First");
-	// 	expect(cascade).toHaveBeenNthCalledWith(2, "Second");
-	// });
+		// Assert.
+		expect(success).toBe(true);
+		expect(clientSpy).toHaveBeenCalledExactlyOnceWith("foo");
+		expect(serverSpy).toHaveBeenCalledExactlyOnceWith("foo", contextProvider);
+	});
 });
-
-type MockData = {
-	name: string;
-};
-
-class SafeError extends Error {}

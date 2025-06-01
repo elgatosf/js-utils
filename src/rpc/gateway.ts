@@ -1,29 +1,29 @@
 import { type JsonValue } from "../json.js";
-import { Client } from "./client.js";
+import { RpcClient } from "./client.js";
 import type { RpcProxy } from "./proxy.js";
-import { Server } from "./server.js";
+import { RpcServer } from "./server.js";
 
 /**
  * Acts as an RPC client and a server, allowing for outbound and inbound requests and responses.
  */
-export class Gateway {
+export class RpcGateway {
 	/**
 	 * Client response for sending requests, and receiving responses.
 	 */
-	public readonly client: Client;
+	public readonly client: RpcClient;
 
 	/**
 	 * Server responsible for receiving requests, and sending responses.
 	 */
-	public readonly server: Server;
+	public readonly server: RpcServer;
 
 	/**
-	 * Initializes a new instance of the {@link Gateway} class.
+	 * Initializes a new instance of the {@link RpcGateway} class.
 	 * @param proxy Proxy capable of sending requests or responses to a client or server.
 	 */
 	constructor(proxy: RpcProxy) {
-		this.client = new Client(proxy);
-		this.server = new Server(proxy);
+		this.client = new RpcClient(proxy);
+		this.server = new RpcServer(proxy);
 	}
 
 	/**

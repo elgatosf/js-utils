@@ -1,19 +1,25 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { JsonRpcErrorCode } from "../json-rpc/error.js";
-import type { JsonRpcRequest } from "../json-rpc/request.js";
-import { JsonRpcErrorResponse } from "../json-rpc/response.js";
-import { Responder } from "../response.js";
-import { Server } from "../server.js";
+import {
+	JsonRpcErrorCode,
+	type JsonRpcErrorResponse,
+	type JsonRpcRequest,
+	type JsonRpcResponse,
+	RpcRequestResponder,
+	RpcServer,
+} from "../index.js";
 
+/**
+ * Describes {@link RpcServer}.
+ */
 describe("RpcServer", () => {
 	/**
-	 * Asserts an RPC server correctly handles unexpected data structures.
+	 * Asserts an server correctly handles unexpected data structures.
 	 */
-	it("must not process unknown payloads", async () => {
+	it("ignores unknown payloads", async () => {
 		// Arrange.
 		const proxy = vi.fn();
-		const server = new Server(proxy);
+		const server = new RpcServer(proxy);
 
 		// Act.
 		const result = await server.receive(true);
@@ -24,12 +30,12 @@ describe("RpcServer", () => {
 	});
 
 	/**
-	 * Asserts an RPC server returns an error for unknown methods.
+	 * Asserts an server returns an error for unknown methods.
 	 */
 	it("responds with an error for unknown methods", async () => {
 		// Arrange.
 		const proxy = vi.fn();
-		const server = new Server(proxy);
+		const server = new RpcServer(proxy);
 
 		// Act.
 		await server.receive({
@@ -51,33 +57,15 @@ describe("RpcServer", () => {
 	});
 
 	/**
-	 * Asserts an RPC server executes route handlers in order.
+	 * Asserts methods are unique by name.
 	 */
-	it("must execute handlers in order", async () => {
-		// Arrange
-		const proxy = vi.fn();
-		const server = new Server(proxy);
-		const order: string[] = [];
-		const handlers = [
-			() => {
-				order.push("First");
-			},
-			() => {
-				order.push("Second");
-			},
-		];
+	it("methods are unique", () => {
+		// Arrange.
+		const server = new RpcServer(vi.fn());
 
-		// Act.
-		server.add("/test", handlers[0]);
-		server.add("/test", handlers[1]);
-
-		await server.receive({
-			jsonrpc: "2.0",
-			method: "/test",
-		} satisfies JsonRpcRequest);
-
-		// Assert
-		expect(order).toEqual(["First", "Second"]);
+		// Act, assert.
+		server.add("test", vi.fn());
+		expect(() => server.add("test", vi.fn())).toThrowError(`Method already exists: test`);
 	});
 
 	/**
@@ -87,7 +75,7 @@ describe("RpcServer", () => {
 		// Arrange.
 		const proxy = vi.fn();
 		const listener = vi.fn();
-		const server = new Server(proxy);
+		const server = new RpcServer(proxy);
 		const req: JsonRpcRequest = {
 			jsonrpc: "2.0",
 			method: "/test",
@@ -105,10 +93,13 @@ describe("RpcServer", () => {
 		expect(listener).toHaveBeenCalledTimes(1); // Should still be 1.
 	});
 
+	/**
+	 * Asserts the server provides the parameters from the request.
+	 */
 	it("provides parameters", async () => {
 		// Arrange.
 		const listener = vi.fn();
-		const server = new Server(vi.fn());
+		const server = new RpcServer(vi.fn());
 
 		// Act.
 		server.add("/test", ({ name }: MockParameters) => {
@@ -131,11 +122,11 @@ describe("RpcServer", () => {
 	/**
 	 * Asserts context can be provided to method.
 	 */
-	it("provides context to method", async () => {
+	it("provides context", async () => {
 		// Arrange.
 		const proxy = vi.fn();
 		const listener = vi.fn();
-		const server = new Server(proxy);
+		const server = new RpcServer(proxy);
 
 		// Act.
 		server.add("/context", listener);
@@ -149,7 +140,92 @@ describe("RpcServer", () => {
 
 		// Assert.
 		expect(listener).toHaveBeenCalledTimes(1);
-		expect(listener).toHaveBeenCalledWith(undefined, expect.any(Responder), "Context");
+		expect(listener).toHaveBeenCalledWith(undefined, expect.any(RpcRequestResponder), "Context");
+	});
+
+	/**
+	 * Asserts the server returns the result of the handler.
+	 */
+	it("returns the result", async () => {
+		// Arrange.
+		const proxy = vi.fn();
+		const server = new RpcServer(proxy);
+
+		// Act.
+		server.add("test", () => "Hello world");
+		await server.receive({
+			jsonrpc: "2.0",
+			method: "test",
+			id: "123",
+		} satisfies JsonRpcRequest);
+
+		// Assert
+		expect(proxy).toHaveBeenCalledTimes(1);
+		expect(proxy).toHaveBeenCalledWith<[JsonRpcResponse]>({
+			jsonrpc: "2.0",
+			id: "123",
+			result: "Hello world",
+		});
+	});
+
+	/**
+	 * Asserts the server returns null result for method handlers that have no result.
+	 */
+	it("returns null when no result", async () => {
+		// Arrange.
+		const proxy = vi.fn();
+		const server = new RpcServer(proxy);
+
+		// Act.
+		server.add("test", () => {
+			/* no result */
+		});
+		await server.receive({
+			jsonrpc: "2.0",
+			method: "test",
+			id: "123",
+		} satisfies JsonRpcRequest);
+
+		// Assert
+		expect(proxy).toHaveBeenCalledTimes(1);
+		expect(proxy).toHaveBeenCalledWith<[JsonRpcResponse]>({
+			jsonrpc: "2.0",
+			id: "123",
+			result: null,
+		});
+	});
+
+	/**
+	 * Asserts the server returns an error for thrown errors
+	 */
+	it("returns an error for thrown errors", async () => {
+		// Arrange.
+		const proxy = vi.fn();
+		const server = new RpcServer(proxy);
+
+		// Act.
+		server.add("err", () => {
+			throw new Error("Something went wrong");
+		});
+
+		await expect(
+			server.receive({
+				jsonrpc: "2.0",
+				method: "err",
+				id: "123",
+			} satisfies JsonRpcRequest),
+		).rejects.toEqual(new Error("Something went wrong"));
+
+		// Assert
+		expect(proxy).toHaveBeenCalledTimes(1);
+		expect(proxy).toHaveBeenCalledWith<[JsonRpcResponse]>({
+			jsonrpc: "2.0",
+			id: "123",
+			error: {
+				code: JsonRpcErrorCode.InternalError,
+				message: "Something went wrong",
+			},
+		});
 	});
 });
 

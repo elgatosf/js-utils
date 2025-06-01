@@ -1,15 +1,27 @@
+import { EventEmitter } from "node:stream";
+
 import type { JsonValue } from "../json.js";
 import { JsonRpcErrorCode } from "./json-rpc/error.js";
 import type { JsonRpcRequest } from "./json-rpc/request.js";
 import { JsonRpcResponse } from "./json-rpc/response.js";
 import type { RpcProxy } from "./proxy.js";
-import { type RequestOptions, type RequestParameters } from "./request.js";
-import { type Response, type ResponseResult } from "./response.js";
+import { type RpcRequestOptions, type RpcRequestParameters } from "./request.js";
+import { type RpcResponse, type RpcResponseResult } from "./response.js";
+
+/**
+ * Events that can occur as part of an RPC client.
+ */
+type RpcClientEventMap = {
+	/**
+	 * Occurs when a response was returned that did not contain an identifier.
+	 */
+	unidentifiedResponse: [RpcResponse];
+};
 
 /**
  * Client capable of sending requests to, and receiving responses from, a server.
  */
-export class Client {
+export class RpcClient extends EventEmitter<RpcClientEventMap> {
 	/**
 	 * Proxy responsible for sending requests to a server.
 	 */
@@ -18,33 +30,34 @@ export class Client {
 	/**
 	 * Requests with pending responses.
 	 */
-	readonly #requests = new Map<string, (res: Response) => void>();
+	readonly #requests = new Map<string, (res: RpcResponse) => void>();
 
 	/**
-	 * Initializes a new instance of the {@link Client} class.
+	 * Initializes a new instance of the {@link RpcClient} class.
 	 * @param proxy Proxy responsible for sending requests to a server
 	 */
 	constructor(proxy: RpcProxy) {
+		super();
 		this.#proxy = proxy;
 	}
 
 	/**
 	 * Sends a notification to the listening server.
+	 * @param request The request.
+	 */
+	public async notify(request: RpcRequestOptions): Promise<void>;
+	/**
+	 * Sends a notification to the listening server.
 	 * @param method Name of the method to invoke.
 	 * @param params Parameters to be used during the invocation of the method.
 	 */
-	public async notify(method: string, params?: RequestParameters): Promise<void>;
-	/**
-	 * Sends a notification to the listening server.
-	 * @param request The request.
-	 */
-	public async notify(request: RequestOptions): Promise<void>;
+	public async notify(method: string, params?: RpcRequestParameters): Promise<void>;
 	/**
 	 * Sends a notification to the listening server.
 	 * @param methodOrRequest The method name, or the request.
 	 * @param params Parameters to be used during the invocation of the method.
 	 */
-	public async notify(methodOrRequest: RequestOptions | string, params?: RequestParameters): Promise<void> {
+	public async notify(methodOrRequest: RpcRequestOptions | string, params?: RpcRequestParameters): Promise<void> {
 		if (typeof methodOrRequest === "string") {
 			await this.#proxy({
 				jsonrpc: "2.0",
@@ -88,30 +101,30 @@ export class Client {
 
 	/**
 	 * Sends the request to the listening server.
+	 * @param request The request.
+	 * @returns The response.
+	 */
+	public async request<TResult extends RpcResponseResult>(request: RpcRequestOptions): Promise<RpcResponse<TResult>>;
+	/**
+	 * Sends the request to the listening server.
 	 * @param method Name of the method to invoke.
 	 * @param params Parameters to be used during the invocation of the method.
 	 * @returns The response.
 	 */
-	public async request<TResult extends ResponseResult>(
+	public async request<TResult extends RpcResponseResult>(
 		method: string,
-		params?: RequestParameters,
-	): Promise<Response<TResult>>;
-	/**
-	 * Sends the request to the listening server.
-	 * @param request The request.
-	 * @returns The response.
-	 */
-	public async request<TResult extends ResponseResult>(request: RequestOptions): Promise<Response<TResult>>;
+		params?: RpcRequestParameters,
+	): Promise<RpcResponse<TResult>>;
 	/**
 	 * Sends the request to the listening server.
 	 * @param methodOrRequest The method name, or the request.
 	 * @param params Parameters to be used during the invocation of the method.
 	 * @returns The response.
 	 */
-	public async request<TResult extends ResponseResult>(
-		methodOrRequest: RequestOptions | string,
-		params?: RequestParameters,
-	): Promise<Response<TResult>> {
+	public async request<TResult extends RpcResponseResult>(
+		methodOrRequest: RpcRequestOptions | string,
+		params?: RpcRequestParameters,
+	): Promise<RpcResponse<TResult>> {
 		if (typeof methodOrRequest === "string") {
 			return this.#send({
 				method: methodOrRequest,
@@ -127,8 +140,9 @@ export class Client {
 	 * @param id The request identifier.
 	 * @param response The response.
 	 */
-	#resolve(id: string | undefined, response: Response): void {
+	#resolve(id: string | undefined, response: RpcResponse): void {
 		if (id === undefined) {
+			this.emit("unidentifiedResponse", response);
 			return;
 		}
 
@@ -147,17 +161,15 @@ export class Client {
 	 * @param request The request.
 	 * @returns The response.
 	 */
-	async #send<TParameters extends RequestParameters, TResult extends ResponseResult = null>(
-		request: RequestOptions<TParameters>,
-	): Promise<Response<TResult>> {
+	async #send<TResult extends RpcResponseResult = null>(request: RpcRequestOptions): Promise<RpcResponse<TResult>> {
 		const id = crypto.randomUUID();
 		const { method, params, timeout } = request;
 
 		// Initialize the response handler.
-		const response = new Promise<Response<TResult>>((resolve) => {
+		const response = new Promise<RpcResponse<TResult>>((resolve) => {
 			this.#requests.set(id, (res) => {
 				clearTimeout(timeoutMonitor);
-				resolve(res as Response<TResult>);
+				resolve(res as RpcResponse<TResult>);
 			});
 		});
 
@@ -166,7 +178,7 @@ export class Client {
 			this.#resolve(id, {
 				ok: false,
 				error: {
-					code: -32603,
+					code: JsonRpcErrorCode.InternalError,
 					message: "The request timed out.",
 				},
 			});
@@ -180,7 +192,7 @@ export class Client {
 				ok: false,
 				error: {
 					code: JsonRpcErrorCode.InternalError,
-					message: "Failed to send request",
+					message: "Failed to send request.",
 				},
 			});
 		}
