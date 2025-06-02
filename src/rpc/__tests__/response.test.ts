@@ -6,12 +6,26 @@ import { type JsonRpcErrorResponse, JsonRpcResponse, RpcRequestResponder } from 
  * Describes {@link RpcRequestResponder}.
  */
 describe("RpcRequestResponder", () => {
-	it("can respond by default", () => {
+	/**
+	 * Asserts `canRespond` is `true` when a request id was provided.
+	 */
+	it("can respond by default with an id", () => {
+		// Arrange, act.
+		const res = new RpcRequestResponder(vi.fn(), "123");
+
+		// Assert.
+		expect(res.canRespond).toBe(true);
+	});
+
+	/**
+	 * Asserts `canRespond` is `false` when a request id was not provided.
+	 */
+	it("cannot respond by default without an id", () => {
 		// Arrange, act.
 		const res = new RpcRequestResponder(vi.fn(), undefined);
 
 		// Assert.
-		expect(res.canRespond).toBe(true);
+		expect(res.canRespond).toBe(false);
 	});
 
 	/**
@@ -27,8 +41,7 @@ describe("RpcRequestResponder", () => {
 
 		// Assert
 		expect(res.canRespond).toBe(false);
-		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenCalledWith<[JsonRpcResponse]>({
+		expect(proxy).toHaveBeenCalledExactlyOnceWith<[JsonRpcResponse]>({
 			jsonrpc: "2.0",
 			result: "Hello world",
 			id: "123",
@@ -47,7 +60,7 @@ describe("RpcRequestResponder", () => {
 		await res.success("Hello world");
 
 		// Assert
-		expect(res.canRespond).toBe(true);
+		expect(res.canRespond).toBe(false);
 		expect(proxy).toHaveBeenCalledTimes(0);
 	});
 
@@ -71,8 +84,7 @@ describe("RpcRequestResponder", () => {
 
 			// Assert.
 			expect(res.canRespond).toBe(false);
-			expect(proxy).toHaveBeenCalledTimes(1);
-			expect(proxy).toHaveBeenCalledWith<[JsonRpcErrorResponse]>({
+			expect(proxy).toHaveBeenCalledExactlyOnceWith<[JsonRpcErrorResponse]>({
 				jsonrpc: "2.0",
 				error: {
 					code: 123,

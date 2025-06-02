@@ -66,10 +66,10 @@ export class RpcRequestResponder {
 
 	/**
 	 * Indicates whether a response can be sent.
-	 * @returns `true` when a response has not yet been set.
+	 * @returns `true` when a response has not yet been set and the request accepts responses.
 	 */
 	public get canRespond(): boolean {
-		return !this.#responded;
+		return !this.#responded && this.#id !== undefined;
 	}
 
 	/**
@@ -105,7 +105,7 @@ export class RpcRequestResponder {
 	 * @param res The response.
 	 */
 	async #send(res: JsonRpcResponse): Promise<void> {
-		if (this.canRespond) {
+		if (!this.#responded) {
 			await this.#proxy(res);
 			this.#responded = true;
 		}

@@ -4,8 +4,7 @@ import {
 	JsonRpcErrorCode,
 	type JsonRpcErrorResponse,
 	type JsonRpcRequest,
-	type JsonRpcResponse,
-	RpcRequestResponder,
+	JsonRpcResponse,
 	RpcServer,
 } from "../index.js";
 
@@ -45,8 +44,7 @@ describe("RpcServer", () => {
 		} satisfies JsonRpcRequest);
 
 		// Assert.
-		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenCalledWith<[JsonRpcErrorResponse]>({
+		expect(proxy).toHaveBeenCalledExactlyOnceWith<[JsonRpcErrorResponse]>({
 			jsonrpc: "2.0",
 			id: "123",
 			error: {
@@ -57,15 +55,28 @@ describe("RpcServer", () => {
 	});
 
 	/**
-	 * Asserts methods are unique by name.
+	 * Asserts methods can be chained.
 	 */
-	it("methods are unique", () => {
+	it("methods can be chained", async () => {
 		// Arrange.
-		const server = new RpcServer(vi.fn());
+		const proxy = vi.fn();
+		const server = new RpcServer(proxy);
 
-		// Act, assert.
-		server.add("test", vi.fn());
-		expect(() => server.add("test", vi.fn())).toThrowError(`Method already exists: test`);
+		// Act.
+		server.add("test", (req, res, next) => next());
+		server.add("test", () => "Hello world");
+		await server.receive({
+			jsonrpc: "2.0",
+			method: "test",
+			id: "123",
+		} satisfies JsonRpcRequest);
+
+		// Assert.
+		expect(proxy).toHaveBeenCalledExactlyOnceWith<[JsonRpcResponse]>({
+			jsonrpc: "2.0",
+			id: "123",
+			result: "Hello world",
+		});
 	});
 
 	/**
@@ -115,32 +126,7 @@ describe("RpcServer", () => {
 		} satisfies JsonRpcRequest);
 
 		// Assert.
-		expect(listener).toHaveBeenCalledTimes(1);
-		expect(listener).toHaveBeenCalledWith("Elgato");
-	});
-
-	/**
-	 * Asserts context can be provided to method.
-	 */
-	it("provides context", async () => {
-		// Arrange.
-		const proxy = vi.fn();
-		const listener = vi.fn();
-		const server = new RpcServer(proxy);
-
-		// Act.
-		server.add("/context", listener);
-		await server.receive(
-			{
-				jsonrpc: "2.0",
-				method: "/context",
-			} satisfies JsonRpcRequest,
-			() => "Context",
-		);
-
-		// Assert.
-		expect(listener).toHaveBeenCalledTimes(1);
-		expect(listener).toHaveBeenCalledWith(undefined, expect.any(RpcRequestResponder), "Context");
+		expect(listener).toHaveBeenCalledExactlyOnceWith("Elgato");
 	});
 
 	/**
@@ -160,8 +146,7 @@ describe("RpcServer", () => {
 		} satisfies JsonRpcRequest);
 
 		// Assert
-		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenCalledWith<[JsonRpcResponse]>({
+		expect(proxy).toHaveBeenCalledExactlyOnceWith<[JsonRpcResponse]>({
 			jsonrpc: "2.0",
 			id: "123",
 			result: "Hello world",
@@ -187,8 +172,7 @@ describe("RpcServer", () => {
 		} satisfies JsonRpcRequest);
 
 		// Assert
-		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenCalledWith<[JsonRpcResponse]>({
+		expect(proxy).toHaveBeenCalledExactlyOnceWith<[JsonRpcResponse]>({
 			jsonrpc: "2.0",
 			id: "123",
 			result: null,
@@ -217,8 +201,7 @@ describe("RpcServer", () => {
 		).rejects.toEqual(new Error("Something went wrong"));
 
 		// Assert
-		expect(proxy).toHaveBeenCalledTimes(1);
-		expect(proxy).toHaveBeenCalledWith<[JsonRpcResponse]>({
+		expect(proxy).toHaveBeenCalledExactlyOnceWith<[JsonRpcResponse]>({
 			jsonrpc: "2.0",
 			id: "123",
 			error: {

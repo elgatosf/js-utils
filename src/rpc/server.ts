@@ -1,4 +1,5 @@
-import { deferredDisposable, type IDisposable } from "../disposable.js";
+import { type IDisposable } from "../disposable.js";
+import { EventEmitter } from "../event-emitter.js";
 import type { JsonValue } from "../json.js";
 import { JsonRpcErrorCode } from "./json-rpc/error.js";
 import { JsonRpcRequest } from "./json-rpc/request.js";
@@ -11,14 +12,14 @@ import { RpcRequestResponder, type RpcResponseResult } from "./response.js";
  */
 export class RpcServer {
 	/**
+	 * Registered methods, and their respective handlers.
+	 */
+	readonly #methods = new EventEmitter<RpcServerMethodsEventMap>();
+
+	/**
 	 * Proxy responsible for sending responses to a client.
 	 */
 	readonly #proxy: RpcProxy;
-
-	/**
-	 * Registered methods, and their respective handlers.
-	 */
-	readonly #methods = new Map<string, MethodHandler>();
 
 	/**
 	 * Initializes a new instance of the {@link RpcServer} class.
@@ -34,70 +35,64 @@ export class RpcServer {
 	 * @param handler Handler to be invoked when the request is received.
 	 * @returns Disposable capable of removing the handler.
 	 */
-	public add<TParameters extends RpcRequestParameters, TContext>(
-		name: string,
-		handler: MethodHandler<TParameters, TContext>,
-	): IDisposable {
-		if (this.#methods.has(name)) {
-			throw new Error(`Method already exists: ${name}`);
-		}
-
-		this.#methods.set(name, handler as MethodHandler);
-		return deferredDisposable(() => this.#methods.delete(name));
+	public add<TParameters extends RpcRequestParameters>(name: string, handler: MethodHandler<TParameters>): IDisposable {
+		return this.#methods.disposableOn(name, handler as MethodHandler);
 	}
 
 	/**
 	 * Attempts to process the specified request received from a client.
 	 * @param value Value to process.
-	 * @param contextProvider Optional context provider, provided to the handlers when responding to requests.
 	 * @returns `true` when the server was able to process the request; otherwise `false`.
 	 */
-	public async receive<TContext = undefined>(value: JsonValue, contextProvider?: () => TContext): Promise<boolean> {
+	public async receive(value: JsonValue): Promise<boolean> {
 		const { success, data: request } = JsonRpcRequest.safeParse(value);
 		if (!success) {
 			return false;
 		}
 
 		const responder = new RpcRequestResponder(this.#proxy, request.id);
-		contextProvider ??= (): TContext => undefined!;
+		const methods = this.#methods.listeners(request.method);
 
-		if (await this.#route(request, responder, contextProvider)) {
-			return true;
-		} else {
+		if (methods.length === 0) {
 			await responder.error({
 				code: JsonRpcErrorCode.MethodNotFound,
 				message: "The method does not exist or is not available.",
 			});
-		}
 
-		return false;
-	}
-
-	/**
-	 * Handles inbound requests.
-	 * @param request The request.
-	 * @param responder The responder responsible for responding to the client.
-	 * @param contextProvider Optional context provider, provided to handlers when responding to requests.
-	 * @returns `true` when the request was handled; otherwise `false`.
-	 */
-	async #route<TParameters extends RpcRequestParameters, TContext>(
-		request: JsonRpcRequest,
-		responder: RpcRequestResponder,
-		contextProvider: () => TContext,
-	): Promise<boolean> {
-		const handler = this.#methods.get(request.method) as MethodHandler<TParameters, TContext> | undefined;
-		if (handler === undefined) {
 			return false;
 		}
 
+		await this.#invoke(methods, request.params, responder);
+		return true;
+	}
+
+	/**
+	 * Invokes the specified methods with the request information and attempts to return a response.
+	 * @param methods Chain of methods.
+	 * @param parameters Parameters provided with the request.
+	 * @param responder Request responder responsible for sending a response.
+	 */
+	async #invoke(
+		methods: MethodHandler[],
+		parameters: RpcRequestParameters,
+		responder: RpcRequestResponder,
+	): Promise<void> {
+		// `next` function used to chain methods.
+		const next = (methods: MethodHandler[]) => {
+			return (): ReturnType<MethodHandler> => {
+				const [curr, ...rest] = methods;
+				if (curr === undefined) {
+					return null;
+				}
+
+				return curr(parameters as undefined, responder, next(rest));
+			};
+		};
+
 		try {
-			// Invoke the handler; when data was returned, propagate it as part of the response (if there wasn't already a response).
-			const result = await handler(request.params as unknown as TParameters, responder, contextProvider());
-			if (result === undefined) {
-				await responder.success(null);
-			} else {
-				await responder.success(result);
-			}
+			// Execute the first method.
+			const result = await next(methods)();
+			await responder.success(result ?? null);
 		} catch (err) {
 			// Respond with an error before throwing.
 			await responder.error({
@@ -107,18 +102,22 @@ export class RpcServer {
 
 			throw err;
 		}
-
-		return true;
 	}
 }
 
 /**
+ * Event map for methods the server is responsible for.
+ */
+type RpcServerMethodsEventMap = {
+	[name: string]: [...Parameters<MethodHandler>];
+};
+
+/**
  * Function responsible for handling a request, and providing a result.
  * @template TParameters Type of the parameter sent with the request.
- * @template TContext Type of the context provided to the method handler when receiving requests.
  */
-export type MethodHandler<TParameters extends RpcRequestParameters = undefined, TContext = undefined> = (
+export type MethodHandler<TParameters extends RpcRequestParameters = undefined> = (
 	parameters: TParameters,
 	responder: RpcRequestResponder,
-	context: TContext,
+	next: () => Promise<RpcResponseResult | void> | RpcResponseResult | void,
 ) => Promise<RpcResponseResult | void> | RpcResponseResult | void;

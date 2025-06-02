@@ -29,16 +29,14 @@ export class RpcGateway {
 	/**
 	 * Attempts to process the specified value as a request or response.
 	 * @param value Value to process.
-	 * @param contextProvider Optional context provider, provided to route handlers when responding to requests.
-	 * @template TContext Type of the context provided to the route handler when receiving requests.
 	 * @returns `true` when the value was successfully processed; otherwise `false`.
 	 */
-	public async receive<TContext = unknown>(value: JsonValue, contextProvider?: () => TContext): Promise<boolean> {
+	public async receive(value: JsonValue): Promise<boolean> {
 		if (await this.client.receive(value)) {
 			return true;
 		}
 
-		if (await this.server.receive(value, contextProvider)) {
+		if (await this.server.receive(value)) {
 			return true;
 		}
 

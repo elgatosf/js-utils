@@ -27,12 +27,11 @@ describe("RpcGateway", () => {
 		const serverSpy = vi.spyOn(gateway.server, "receive");
 
 		// Act.
-		const contextProvider = vi.fn();
-		await gateway.receive("foo", contextProvider);
+		await gateway.receive("foo");
 
 		// Assert.
 		expect(clientSpy).toHaveBeenCalledExactlyOnceWith("foo");
-		expect(serverSpy).toHaveBeenCalledExactlyOnceWith("foo", contextProvider);
+		expect(serverSpy).toHaveBeenCalledExactlyOnceWith("foo");
 		expect(clientSpy).toHaveBeenCalledBefore(serverSpy);
 	});
 
@@ -46,8 +45,7 @@ describe("RpcGateway", () => {
 		const serverSpy = vi.spyOn(gateway.server, "receive");
 
 		// Act.
-		const contextProvider = vi.fn();
-		const success = await gateway.receive("foo", contextProvider);
+		const success = await gateway.receive("foo");
 
 		// Assert.
 		expect(success).toBe(true);
@@ -65,12 +63,11 @@ describe("RpcGateway", () => {
 		const serverSpy = vi.spyOn(gateway.server, "receive").mockReturnValue(Promise.resolve(true));
 
 		// Act.
-		const contextProvider = vi.fn();
-		const success = await gateway.receive("foo", contextProvider);
+		const success = await gateway.receive("foo");
 
 		// Assert.
 		expect(success).toBe(true);
 		expect(clientSpy).toHaveBeenCalledExactlyOnceWith("foo");
-		expect(serverSpy).toHaveBeenCalledExactlyOnceWith("foo", contextProvider);
+		expect(serverSpy).toHaveBeenCalledExactlyOnceWith("foo");
 	});
 });
