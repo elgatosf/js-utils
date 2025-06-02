@@ -9,6 +9,7 @@
     "scripts": {
         "build": "rm -rf dist/ && tsc --project tsconfig.build.json",
         "lint": "eslint --max-warnings 0",
+        "preversion": "npm run build && npm test && npm run lint",
         "test": "vitest run --typecheck",
         "test:coverage": "vitest run --coverage",
         "test:watch": "vitest --typecheck",
