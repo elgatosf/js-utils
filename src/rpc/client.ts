@@ -1,5 +1,4 @@
-import { EventEmitter } from "node:stream";
-
+import { EventEmitter } from "../event-emitter.js";
 import type { JsonValue } from "../json.js";
 import { JsonRpcErrorCode } from "./json-rpc/error.js";
 import type { JsonRpcRequest } from "./json-rpc/request.js";
