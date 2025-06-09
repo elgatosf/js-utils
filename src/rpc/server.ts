@@ -3,9 +3,9 @@ import { EventEmitter } from "../event-emitter.js";
 import type { JsonValue } from "../json.js";
 import { JsonRpcErrorCode } from "./json-rpc/error.js";
 import { JsonRpcRequest } from "./json-rpc/request.js";
-import type { RpcProxy } from "./proxy.js";
 import type { RpcRequestParameters } from "./request.js";
 import { RpcRequestResponder, type RpcResponseResult } from "./response.js";
+import type { RpcSender } from "./sender.js";
 
 /**
  * Server capable of receiving requests from, and sending responses to, a client.
@@ -17,16 +17,16 @@ export class RpcServer {
 	readonly #methods = new EventEmitter<RpcServerMethodsEventMap>();
 
 	/**
-	 * Proxy responsible for sending responses to a client.
+	 * Function responsible for sending responses.
 	 */
-	readonly #proxy: RpcProxy;
+	readonly #send: RpcSender;
 
 	/**
 	 * Initializes a new instance of the {@link RpcServer} class.
-	 * @param proxy Proxy responsible for sending responses to a client.
+	 * @param send Function responsible for sending responses.
 	 */
-	constructor(proxy: RpcProxy) {
-		this.#proxy = proxy;
+	constructor(send: RpcSender) {
+		this.#send = send;
 	}
 
 	/**
@@ -50,7 +50,7 @@ export class RpcServer {
 			return false;
 		}
 
-		const responder = new RpcRequestResponder(this.#proxy, request.id);
+		const responder = new RpcRequestResponder(this.#send, request.id);
 		const methods = this.#methods.listeners(request.method);
 
 		if (methods.length === 0) {

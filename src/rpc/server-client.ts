@@ -1,17 +1,17 @@
 import { type JsonValue } from "../json.js";
 import { RpcClient, type RpcClientOptions } from "./client.js";
-import type { RpcProxy } from "./proxy.js";
+import type { RpcSender } from "./sender.js";
 import { RpcServer } from "./server.js";
 
 /**
  * Create an RPC server-and-client, capable of receiving and sending requests and notifications.
- * @param proxy Proxy capable of sending requests or responses to a client or server.
+ * @param send Function responsible for sending requests and responses.
  * @param options the options.
  * @returns The RPC server-and-client.
  */
-export function createRpcServerClient(proxy: RpcProxy, options?: RpcClientOptions): RpcClientServer {
-	const client = new RpcClient(proxy, options);
-	const server = new RpcServer(proxy);
+export function createRpcServerClient(send: RpcSender, options?: RpcClientOptions): RpcClientServer {
+	const client = new RpcClient(send, options);
+	const server = new RpcServer(send);
 
 	return {
 		add: server.add,

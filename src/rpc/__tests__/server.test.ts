@@ -17,15 +17,15 @@ describe("RpcServer", () => {
 	 */
 	it("ignores unknown payloads", async () => {
 		// Arrange.
-		const proxy = vi.fn();
-		const server = new RpcServer(proxy);
+		const sender = vi.fn();
+		const server = new RpcServer(sender);
 
 		// Act.
 		const result = await server.receive(true);
 
 		// Assert.
 		expect(result).toBe(false);
-		expect(proxy).toHaveBeenCalledTimes(0);
+		expect(sender).toHaveBeenCalledTimes(0);
 	});
 
 	/**
@@ -33,8 +33,8 @@ describe("RpcServer", () => {
 	 */
 	it("responds with an error for unknown methods", async () => {
 		// Arrange.
-		const proxy = vi.fn();
-		const server = new RpcServer(proxy);
+		const sender = vi.fn();
+		const server = new RpcServer(sender);
 
 		// Act.
 		await server.receive({
@@ -44,7 +44,7 @@ describe("RpcServer", () => {
 		} satisfies JsonRpcRequest);
 
 		// Assert.
-		expect(proxy).toHaveBeenCalledExactlyOnceWith<[JsonRpcErrorResponse]>({
+		expect(sender).toHaveBeenCalledExactlyOnceWith<[JsonRpcErrorResponse]>({
 			jsonrpc: "2.0",
 			id: "123",
 			error: {
@@ -59,8 +59,8 @@ describe("RpcServer", () => {
 	 */
 	it("methods can be chained", async () => {
 		// Arrange.
-		const proxy = vi.fn();
-		const server = new RpcServer(proxy);
+		const sender = vi.fn();
+		const server = new RpcServer(sender);
 
 		// Act.
 		server.add("test", (req, res, next) => next());
@@ -72,10 +72,62 @@ describe("RpcServer", () => {
 		} satisfies JsonRpcRequest);
 
 		// Assert.
-		expect(proxy).toHaveBeenCalledExactlyOnceWith<[JsonRpcResponse]>({
+		expect(sender).toHaveBeenCalledExactlyOnceWith<[JsonRpcResponse]>({
 			jsonrpc: "2.0",
 			id: "123",
 			result: "Hello world",
+		});
+	});
+
+	/**
+	 * Asserts methods resolve to null when no result is return.
+	 */
+	it("methods defaults to null", async () => {
+		// Arrange.
+		const sender = vi.fn();
+		const server = new RpcServer(sender);
+
+		// Act.
+		server.add("test", (req, res, next) => next());
+		server.add("test", () => {
+			/* do nothing */
+		});
+		await server.receive({
+			jsonrpc: "2.0",
+			method: "test",
+			id: "123",
+		} satisfies JsonRpcRequest);
+
+		// Assert.
+		expect(sender).toHaveBeenCalledExactlyOnceWith<[JsonRpcResponse]>({
+			jsonrpc: "2.0",
+			id: "123",
+			result: null,
+		});
+	});
+
+	/**
+	 * Asserts methods resolve to null when there is no next.
+	 */
+	it("methods defaults to null when there is no next", async () => {
+		// Arrange.
+		const sender = vi.fn();
+		const server = new RpcServer(sender);
+
+		// Act.
+		server.add("test", (req, res, next) => next());
+		server.add("test", (req, res, next) => next());
+		await server.receive({
+			jsonrpc: "2.0",
+			method: "test",
+			id: "123",
+		} satisfies JsonRpcRequest);
+
+		// Assert.
+		expect(sender).toHaveBeenCalledExactlyOnceWith<[JsonRpcResponse]>({
+			jsonrpc: "2.0",
+			id: "123",
+			result: null,
 		});
 	});
 
@@ -84,9 +136,9 @@ describe("RpcServer", () => {
 	 */
 	it("can remove methods", async () => {
 		// Arrange.
-		const proxy = vi.fn();
+		const sender = vi.fn();
 		const listener = vi.fn();
-		const server = new RpcServer(proxy);
+		const server = new RpcServer(sender);
 		const req: JsonRpcRequest = {
 			jsonrpc: "2.0",
 			method: "/test",
@@ -134,8 +186,8 @@ describe("RpcServer", () => {
 	 */
 	it("returns the result", async () => {
 		// Arrange.
-		const proxy = vi.fn();
-		const server = new RpcServer(proxy);
+		const sender = vi.fn();
+		const server = new RpcServer(sender);
 
 		// Act.
 		server.add("test", () => "Hello world");
@@ -146,7 +198,7 @@ describe("RpcServer", () => {
 		} satisfies JsonRpcRequest);
 
 		// Assert
-		expect(proxy).toHaveBeenCalledExactlyOnceWith<[JsonRpcResponse]>({
+		expect(sender).toHaveBeenCalledExactlyOnceWith<[JsonRpcResponse]>({
 			jsonrpc: "2.0",
 			id: "123",
 			result: "Hello world",
@@ -158,8 +210,8 @@ describe("RpcServer", () => {
 	 */
 	it("returns null when no result", async () => {
 		// Arrange.
-		const proxy = vi.fn();
-		const server = new RpcServer(proxy);
+		const sender = vi.fn();
+		const server = new RpcServer(sender);
 
 		// Act.
 		server.add("test", () => {
@@ -172,7 +224,7 @@ describe("RpcServer", () => {
 		} satisfies JsonRpcRequest);
 
 		// Assert
-		expect(proxy).toHaveBeenCalledExactlyOnceWith<[JsonRpcResponse]>({
+		expect(sender).toHaveBeenCalledExactlyOnceWith<[JsonRpcResponse]>({
 			jsonrpc: "2.0",
 			id: "123",
 			result: null,
@@ -184,8 +236,8 @@ describe("RpcServer", () => {
 	 */
 	it("returns an error for thrown errors", async () => {
 		// Arrange.
-		const proxy = vi.fn();
-		const server = new RpcServer(proxy);
+		const sender = vi.fn();
+		const server = new RpcServer(sender);
 
 		// Act.
 		server.add("err", () => {
@@ -201,7 +253,7 @@ describe("RpcServer", () => {
 		).rejects.toEqual(new Error("Something went wrong"));
 
 		// Assert
-		expect(proxy).toHaveBeenCalledExactlyOnceWith<[JsonRpcResponse]>({
+		expect(sender).toHaveBeenCalledExactlyOnceWith<[JsonRpcResponse]>({
 			jsonrpc: "2.0",
 			id: "123",
 			error: {

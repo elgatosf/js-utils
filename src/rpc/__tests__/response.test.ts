@@ -33,15 +33,15 @@ describe("RpcRequestResponder", () => {
 	 */
 	it("can send success with id", async () => {
 		// Arrange.
-		const proxy = vi.fn();
-		const res = new RpcRequestResponder(proxy, "123");
+		const sender = vi.fn();
+		const res = new RpcRequestResponder(sender, "123");
 
 		// ACt
 		await res.success("Hello world");
 
 		// Assert
 		expect(res.canRespond).toBe(false);
-		expect(proxy).toHaveBeenCalledExactlyOnceWith<[JsonRpcResponse]>({
+		expect(sender).toHaveBeenCalledExactlyOnceWith<[JsonRpcResponse]>({
 			jsonrpc: "2.0",
 			result: "Hello world",
 			id: "123",
@@ -53,15 +53,15 @@ describe("RpcRequestResponder", () => {
 	 */
 	it("can only send success with id", async () => {
 		// Arrange.
-		const proxy = vi.fn();
-		const res = new RpcRequestResponder(proxy, undefined);
+		const sender = vi.fn();
+		const res = new RpcRequestResponder(sender, undefined);
 
 		// ACt
 		await res.success("Hello world");
 
 		// Assert
 		expect(res.canRespond).toBe(false);
-		expect(proxy).toHaveBeenCalledTimes(0);
+		expect(sender).toHaveBeenCalledTimes(0);
 	});
 
 	describe.each([
@@ -73,8 +73,8 @@ describe("RpcRequestResponder", () => {
 		 */
 		it("can send error", async () => {
 			// Arrange.
-			const proxy = vi.fn();
-			const res = new RpcRequestResponder(proxy, id);
+			const sender = vi.fn();
+			const res = new RpcRequestResponder(sender, id);
 
 			// Act.
 			await res.error({
@@ -84,7 +84,7 @@ describe("RpcRequestResponder", () => {
 
 			// Assert.
 			expect(res.canRespond).toBe(false);
-			expect(proxy).toHaveBeenCalledExactlyOnceWith<[JsonRpcErrorResponse]>({
+			expect(sender).toHaveBeenCalledExactlyOnceWith<[JsonRpcErrorResponse]>({
 				jsonrpc: "2.0",
 				error: {
 					code: 123,
@@ -99,8 +99,8 @@ describe("RpcRequestResponder", () => {
 		 */
 		it("cannot send successive responses", async () => {
 			// Arrange.
-			const proxy = vi.fn();
-			const res = new RpcRequestResponder(proxy, id);
+			const sender = vi.fn();
+			const res = new RpcRequestResponder(sender, id);
 
 			// Act.
 			for (let i = 0; i < 3; i++) {
@@ -112,7 +112,7 @@ describe("RpcRequestResponder", () => {
 
 			// Assert.
 			expect(res.canRespond).toBe(false);
-			expect(proxy).toHaveBeenCalledTimes(1);
+			expect(sender).toHaveBeenCalledTimes(1);
 		});
 	});
 });

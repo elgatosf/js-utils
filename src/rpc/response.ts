@@ -1,7 +1,7 @@
 import type { JsonObject, JsonPrimitive, JsonValue } from "../json.js";
 import type { JsonRpcError } from "./json-rpc/error.js";
 import type { JsonRpcResponse } from "./json-rpc/response.js";
-import type { RpcProxy } from "./proxy.js";
+import type { RpcSender } from "./sender.js";
 
 /**
  * Response object sent from a server.
@@ -53,22 +53,22 @@ export class RpcRequestResponder {
 	readonly #id: string | undefined;
 
 	/**
-	 * Proxy responsible for sending the response to the client.
-	 */
-	readonly #proxy: RpcProxy;
-
-	/**
 	 * Indicates whether a response has already been sent in relation to the response.
 	 */
 	#responded = false;
 
 	/**
+	 * Function responsible for sending responses.
+	 */
+	readonly #send: RpcSender;
+
+	/**
 	 * Initializes a new instance of the {@link RpcRequestResponder} class.
-	 * @param proxy Proxy responsible for forwarding the response to the client.
+	 * @param send Function responsible for sending responses.
 	 * @param id Identifier of the request.
 	 */
-	constructor(proxy: RpcProxy, id: string | undefined) {
-		this.#proxy = proxy;
+	constructor(send: RpcSender, id: string | undefined) {
+		this.#send = send;
 		this.#id = id;
 	}
 
@@ -86,7 +86,7 @@ export class RpcRequestResponder {
 	 * @returns Promise fulfilled once the response has been sent.
 	 */
 	public error(error: JsonRpcError): Promise<void> {
-		return this.#send({
+		return this.#trySend({
 			jsonrpc: "2.0",
 			id: this.#id,
 			error,
@@ -100,7 +100,7 @@ export class RpcRequestResponder {
 	 */
 	public async success(result: RpcResponseResult): Promise<void> {
 		if (this.#id) {
-			await this.#send({
+			await this.#trySend({
 				jsonrpc: "2.0",
 				id: this.#id,
 				result,
@@ -109,12 +109,12 @@ export class RpcRequestResponder {
 	}
 
 	/**
-	 * Sends the response to the client.
+	 * Sends the response to the client if one can be sent.
 	 * @param res The response.
 	 */
-	async #send(res: JsonRpcResponse): Promise<void> {
+	async #trySend(res: JsonRpcResponse): Promise<void> {
 		if (!this.#responded) {
-			await this.#proxy(res);
+			await this.#send(res);
 			this.#responded = true;
 		}
 	}

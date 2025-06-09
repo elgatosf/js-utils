@@ -7,21 +7,21 @@ import {
 	type JsonRpcResponse,
 	RpcClient,
 	type RpcErrorResponse,
-	type RpcProxy,
+	type RpcSender,
 } from "../index.js";
 
 /**
  * Describes {@link RpcClient}.
  */
 describe("RpcClient", () => {
-	let proxy: RpcProxy;
+	let sender: RpcSender;
 	let client: RpcClient;
 
 	/**
 	 * Configure a mock response for requests.
 	 */
 	beforeEach(() => {
-		proxy = vi.fn(({ id, method }: JsonRpcRequest) => {
+		sender = vi.fn(({ id, method }: JsonRpcRequest) => {
 			if (!id) {
 				return true;
 			}
@@ -47,9 +47,9 @@ describe("RpcClient", () => {
 			}
 
 			return true;
-		}) as unknown as RpcProxy;
+		}) as unknown as RpcSender;
 
-		client = new RpcClient(proxy);
+		client = new RpcClient(sender);
 	});
 
 	/**
@@ -71,7 +71,7 @@ describe("RpcClient", () => {
 		});
 
 		// Assert.
-		expect(proxy).toHaveBeenCalledExactlyOnceWith<[JsonRpcRequest]>({
+		expect(sender).toHaveBeenCalledExactlyOnceWith<[JsonRpcRequest]>({
 			jsonrpc: "2.0",
 			method: "test",
 			id: undefined,
@@ -94,7 +94,7 @@ describe("RpcClient", () => {
 		});
 
 		// Assert.
-		expect(proxy).toHaveBeenCalledExactlyOnceWith<[JsonRpcRequest]>({
+		expect(sender).toHaveBeenCalledExactlyOnceWith<[JsonRpcRequest]>({
 			jsonrpc: "2.0",
 			method: "test",
 			id: undefined,
@@ -114,7 +114,7 @@ describe("RpcClient", () => {
 		});
 
 		// Assert.
-		expect(proxy).toHaveBeenCalledExactlyOnceWith<[JsonRpcRequest]>({
+		expect(sender).toHaveBeenCalledExactlyOnceWith<[JsonRpcRequest]>({
 			jsonrpc: "2.0",
 			method: "test",
 			id: expect.any(String),
@@ -142,7 +142,7 @@ describe("RpcClient", () => {
 		});
 
 		// Assert.
-		expect(proxy).toHaveBeenCalledExactlyOnceWith<[JsonRpcRequest]>({
+		expect(sender).toHaveBeenCalledExactlyOnceWith<[JsonRpcRequest]>({
 			jsonrpc: "2.0",
 			method: "test",
 			id: expect.any(String),
@@ -185,24 +185,6 @@ describe("RpcClient", () => {
 		if (!res.ok) {
 			expect(res.error.code).toBe(JsonRpcErrorCode.InternalError);
 			expect(res.error.message).toBe("The request timed out.");
-		}
-	});
-
-	/**
-	 * Asserts an error is returned when the request could not be sent.
-	 */
-	it("resolves to an error when the message could not be sent", async () => {
-		// Arrange.
-		const client = new RpcClient(vi.fn().mockReturnValue(false));
-		const res = await client.request({
-			method: "timeout",
-			timeout: 1,
-		});
-
-		expect(res.ok).toBe(false);
-		if (!res.ok) {
-			expect(res.error.code).toBe(JsonRpcErrorCode.InternalError);
-			expect(res.error.message).toBe("Failed to send request.");
 		}
 	});
 

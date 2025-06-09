@@ -2,9 +2,9 @@ import type { JsonValue } from "../json.js";
 import { JsonRpcErrorCode } from "./json-rpc/error.js";
 import type { JsonRpcRequest } from "./json-rpc/request.js";
 import { JsonRpcResponse } from "./json-rpc/response.js";
-import type { RpcProxy } from "./proxy.js";
 import { type RpcRequestOptions, type RpcRequestParameters } from "./request.js";
 import { type RpcErrorResponse, type RpcResponse, type RpcResponseResult } from "./response.js";
+import type { RpcSender } from "./sender.js";
 
 /**
  * Client capable of sending requests to, and receiving responses from, a server.
@@ -16,9 +16,9 @@ export class RpcClient {
 	readonly #options: Required<RpcClientOptions>;
 
 	/**
-	 * Proxy responsible for sending requests to a server.
+	 * Function responsible for sending requests.
 	 */
-	readonly #proxy: RpcProxy;
+	readonly #send: RpcSender;
 
 	/**
 	 * Requests with pending responses.
@@ -27,11 +27,11 @@ export class RpcClient {
 
 	/**
 	 * Initializes a new instance of the {@link RpcClient} class.
-	 * @param proxy Proxy responsible for sending requests to a server
+	 * @param send Function responsible for sending requests.
 	 * @param options Client options.
 	 */
-	constructor(proxy: RpcProxy, options?: RpcClientOptions) {
-		this.#proxy = proxy;
+	constructor(send: RpcSender, options?: RpcClientOptions) {
+		this.#send = send;
 		this.#options = {
 			...{ error: (): void => {} },
 			...options,
@@ -56,13 +56,13 @@ export class RpcClient {
 	 */
 	public async notify(methodOrRequest: RpcRequestOptions | string, params?: RpcRequestParameters): Promise<void> {
 		if (typeof methodOrRequest === "string") {
-			await this.#proxy({
+			await this.#send({
 				jsonrpc: "2.0",
 				method: methodOrRequest,
 				params,
 			} satisfies JsonRpcRequest);
 		} else {
-			await this.#proxy({
+			await this.#send({
 				jsonrpc: "2.0",
 				method: methodOrRequest.method,
 				params: methodOrRequest.params,
@@ -129,12 +129,12 @@ export class RpcClient {
 		params?: RpcRequestParameters,
 	): Promise<RpcResponse<TResult>> {
 		if (typeof methodOrRequest === "string") {
-			return this.#send({
+			return this.#sendRequest({
 				method: methodOrRequest,
 				params,
 			});
 		} else {
-			return this.#send(methodOrRequest);
+			return this.#sendRequest(methodOrRequest);
 		}
 	}
 
@@ -159,7 +159,9 @@ export class RpcClient {
 	 * @param request The request.
 	 * @returns The response.
 	 */
-	async #send<TResult extends RpcResponseResult = null>(request: RpcRequestOptions): Promise<RpcResponse<TResult>> {
+	async #sendRequest<TResult extends RpcResponseResult = null>(
+		request: RpcRequestOptions,
+	): Promise<RpcResponse<TResult>> {
 		const id = crypto.randomUUID();
 		const { method, params, timeout } = request;
 
@@ -182,19 +184,7 @@ export class RpcClient {
 			});
 		}, timeout);
 
-		const accepted = await this.#proxy({ jsonrpc: "2.0", method, params, id } satisfies JsonRpcRequest);
-
-		// When the server did not accept the request, return a 406.
-		if (!accepted) {
-			this.#resolve(id, {
-				ok: false,
-				error: {
-					code: JsonRpcErrorCode.InternalError,
-					message: "Failed to send request.",
-				},
-			});
-		}
-
+		await this.#send({ jsonrpc: "2.0", method, params, id } satisfies JsonRpcRequest);
 		return response;
 	}
 }

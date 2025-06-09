@@ -19,6 +19,8 @@
 - Update `RpcClient` to accept options.
 - Replace `unidentifiedResponse` event in `RpcClient` with `options.error`.
 - Replace `RpcGateway` with `createRpcServerClient` to streamline interface.
+- Rename `RpcProxy` to `RpcSender`.
+- Remove requirement of a result from `RpcSender`.
 
 🐞 Fix
 
