@@ -13,7 +13,8 @@
         "test": "vitest run --typecheck",
         "test:coverage": "vitest run --coverage",
         "test:watch": "vitest --typecheck",
-        "type:check": "tsc"
+        "type:check": "tsc",
+        "watch": "tsc --project tsconfig.build.json --watch"
     },
     "exports": {
         ".": {

@@ -6,29 +6,37 @@ import type { RpcProxy } from "./proxy.js";
 /**
  * Response object sent from a server.
  */
-export type RpcResponse<T extends RpcResponseResult = RpcResponseResult> =
-	| {
-			/**
-			 * Result of the request.
-			 */
-			readonly result: T;
+export type RpcResponse<T extends RpcResponseResult = RpcResponseResult> = RpcErrorResponse | RpcSuccessResponse<T>;
 
-			/**
-			 * Determines whether the request was successful.
-			 */
-			readonly ok: true;
-	  }
-	| {
-			/**
-			 * The error that occurred.
-			 */
-			readonly error: JsonRpcError;
+/**
+ * Success response object sent from a server.
+ */
+export type RpcSuccessResponse<T extends RpcResponseResult = RpcResponseResult> = {
+	/**
+	 * Result of the request.
+	 */
+	readonly result: T;
 
-			/**
-			 * Determines whether the request was successful.
-			 */
-			readonly ok: false;
-	  };
+	/**
+	 * Determines whether the request was successful.
+	 */
+	readonly ok: true;
+};
+
+/**
+ * Error response object sent from a server.
+ */
+export type RpcErrorResponse = {
+	/**
+	 * The error that occurred.
+	 */
+	readonly error: JsonRpcError;
+
+	/**
+	 * Determines whether the request was successful.
+	 */
+	readonly ok: false;
+};
 
 /**
  * Type of a result contained within a response.

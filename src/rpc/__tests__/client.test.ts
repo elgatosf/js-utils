@@ -6,8 +6,8 @@ import {
 	type JsonRpcRequest,
 	type JsonRpcResponse,
 	RpcClient,
+	type RpcErrorResponse,
 	type RpcProxy,
-	type RpcResponse,
 } from "../index.js";
 
 /**
@@ -211,11 +211,10 @@ describe("RpcClient", () => {
 	 */
 	it("emits unidentifiedResponse for unknown responses", async () => {
 		// Arrange.
-		const client = new RpcClient(vi.fn());
-		const handler = vi.fn();
+		const error = vi.fn();
+		const client = new RpcClient(vi.fn(), { error });
 
 		// Act.
-		client.on("unidentifiedResponse", handler);
 		await client.receive({
 			jsonrpc: "2.0",
 			error: {
@@ -225,7 +224,7 @@ describe("RpcClient", () => {
 		} satisfies JsonRpcErrorResponse);
 
 		// Assert.
-		expect(handler).toHaveBeenCalledExactlyOnceWith<[RpcResponse]>({
+		expect(error).toHaveBeenCalledExactlyOnceWith<[RpcErrorResponse]>({
 			ok: false,
 			error: {
 				code: 1,

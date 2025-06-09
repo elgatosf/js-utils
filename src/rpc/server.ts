@@ -30,10 +30,10 @@ export class RpcServer {
 	}
 
 	/**
-	 * Maps the specified method name to a method, allowing for requests from a client.
-	 * @param name Name of the method.
-	 * @param handler Handler to be invoked when the request is received.
-	 * @returns Disposable capable of removing the handler.
+	 * Maps a method handler, allowing the server to receive requests or notifications.
+	 * @param name The name of the method to be mapped.
+	 * @param handler The handler function to be invoked when the method is called.
+	 * @returns A disposable object that can be used to remove the method handler.
 	 */
 	public add<TParameters extends RpcRequestParameters>(name: string, handler: MethodHandler<TParameters>): IDisposable {
 		return this.#methods.disposableOn(name, handler as MethodHandler);

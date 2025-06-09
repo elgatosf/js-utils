@@ -1,26 +1,20 @@
-import { EventEmitter } from "../event-emitter.js";
 import type { JsonValue } from "../json.js";
 import { JsonRpcErrorCode } from "./json-rpc/error.js";
 import type { JsonRpcRequest } from "./json-rpc/request.js";
 import { JsonRpcResponse } from "./json-rpc/response.js";
 import type { RpcProxy } from "./proxy.js";
 import { type RpcRequestOptions, type RpcRequestParameters } from "./request.js";
-import { type RpcResponse, type RpcResponseResult } from "./response.js";
-
-/**
- * Events that can occur as part of an RPC client.
- */
-type RpcClientEventMap = {
-	/**
-	 * Occurs when a response was returned that did not contain an identifier.
-	 */
-	unidentifiedResponse: [RpcResponse];
-};
+import { type RpcErrorResponse, type RpcResponse, type RpcResponseResult } from "./response.js";
 
 /**
  * Client capable of sending requests to, and receiving responses from, a server.
  */
-export class RpcClient extends EventEmitter<RpcClientEventMap> {
+export class RpcClient {
+	/**
+	 * The client's options.
+	 */
+	readonly #options: Required<RpcClientOptions>;
+
 	/**
 	 * Proxy responsible for sending requests to a server.
 	 */
@@ -34,25 +28,29 @@ export class RpcClient extends EventEmitter<RpcClientEventMap> {
 	/**
 	 * Initializes a new instance of the {@link RpcClient} class.
 	 * @param proxy Proxy responsible for sending requests to a server
+	 * @param options Client options.
 	 */
-	constructor(proxy: RpcProxy) {
-		super();
+	constructor(proxy: RpcProxy, options?: RpcClientOptions) {
 		this.#proxy = proxy;
+		this.#options = {
+			...{ error: (): void => {} },
+			...options,
+		};
 	}
 
 	/**
-	 * Sends a notification to the listening server.
+	 * Sends a notification to the RPC server.
 	 * @param request The request.
 	 */
 	public async notify(request: RpcRequestOptions): Promise<void>;
 	/**
-	 * Sends a notification to the listening server.
+	 * Sends a notification to the RPC server.
 	 * @param method Name of the method to invoke.
 	 * @param params Parameters to be used during the invocation of the method.
 	 */
 	public async notify(method: string, params?: RpcRequestParameters): Promise<void>;
 	/**
-	 * Sends a notification to the listening server.
+	 * Sends a notification to the RPC server.
 	 * @param methodOrRequest The method name, or the request.
 	 * @param params Parameters to be used during the invocation of the method.
 	 */
@@ -89,23 +87,29 @@ export class RpcClient extends EventEmitter<RpcClientEventMap> {
 				result: response.result,
 			});
 		} else {
-			this.#resolve(response.id, {
+			const err: RpcErrorResponse = {
 				ok: false,
 				error: response.error,
-			});
+			};
+
+			if (response.id === undefined) {
+				this.#options.error(err);
+			} else {
+				this.#resolve(response.id, err);
+			}
 		}
 
 		return true;
 	}
 
 	/**
-	 * Sends the request to the listening server.
+	 * Sends the request to the RPC server.
 	 * @param request The request.
 	 * @returns The response.
 	 */
 	public async request<TResult extends RpcResponseResult>(request: RpcRequestOptions): Promise<RpcResponse<TResult>>;
 	/**
-	 * Sends the request to the listening server.
+	 * Sends the request to the RPC server.
 	 * @param method Name of the method to invoke.
 	 * @param params Parameters to be used during the invocation of the method.
 	 * @returns The response.
@@ -115,7 +119,7 @@ export class RpcClient extends EventEmitter<RpcClientEventMap> {
 		params?: RpcRequestParameters,
 	): Promise<RpcResponse<TResult>>;
 	/**
-	 * Sends the request to the listening server.
+	 * Sends the request to the RPC server.
 	 * @param methodOrRequest The method name, or the request.
 	 * @param params Parameters to be used during the invocation of the method.
 	 * @returns The response.
@@ -139,12 +143,7 @@ export class RpcClient extends EventEmitter<RpcClientEventMap> {
 	 * @param id The request identifier.
 	 * @param response The response.
 	 */
-	#resolve(id: string | undefined, response: RpcResponse): void {
-		if (id === undefined) {
-			this.emit("unidentifiedResponse", response);
-			return;
-		}
-
+	#resolve(id: string, response: RpcResponse): void {
 		// Get the handler
 		const handler = this.#requests.get(id);
 		this.#requests.delete(id);
@@ -156,7 +155,7 @@ export class RpcClient extends EventEmitter<RpcClientEventMap> {
 	}
 
 	/**
-	 * Sends the request to the listening server.
+	 * Sends the request to the RPC server.
 	 * @param request The request.
 	 * @returns The response.
 	 */
@@ -199,3 +198,14 @@ export class RpcClient extends EventEmitter<RpcClientEventMap> {
 		return response;
 	}
 }
+
+/**
+ * Options for an RPC client.
+ */
+export type RpcClientOptions = {
+	/**
+	 * Function invoked when an error response was received that was not associated with a request.
+	 * @param response The response.
+	 */
+	error?: (response: RpcErrorResponse) => void;
+};
