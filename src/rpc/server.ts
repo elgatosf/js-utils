@@ -30,9 +30,9 @@ export class RpcServer {
 	}
 
 	/**
-	 * Adds a method handler, allowing the server to receive requests and notifications.
-	 * @param name The name of the method to be mapped.
-	 * @param handler The handler function to be invoked when the method is called.
+	 * Adds a method handler to this instance, allowing it to receive requests and notifications.
+	 * @param name The name of the method.
+	 * @param handler The function to be invoked when the method is called.
 	 * @returns A disposable object that can be used to remove the method handler.
 	 */
 	public addMethod<TParameters extends RpcRequestParameters>(
