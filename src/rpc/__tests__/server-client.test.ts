@@ -74,12 +74,12 @@ describe("createRpcServerClient", () => {
 	it("can add", () => {
 		// Arrange.
 		const disposable = vi.fn();
-		const serverSpy = vi.spyOn(RpcServer.prototype, "add").mockReturnValue(disposable as unknown as IDisposable);
+		const serverSpy = vi.spyOn(RpcServer.prototype, "addMethod").mockReturnValue(disposable as unknown as IDisposable);
 		const serverClient = createRpcServerClient(vi.fn());
 
 		// Act.
 		const handler = vi.fn();
-		const res = serverClient.add("test", handler);
+		const res = serverClient.addMethod("test", handler);
 
 		// Assert.
 		expect(serverSpy).toHaveBeenCalledExactlyOnceWith<[string, () => void]>("test", handler);

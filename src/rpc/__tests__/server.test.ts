@@ -63,8 +63,8 @@ describe("RpcServer", () => {
 		const server = new RpcServer(sender);
 
 		// Act.
-		server.add("test", (req, res, next) => next());
-		server.add("test", () => "Hello world");
+		server.addMethod("test", (req, res, next) => next());
+		server.addMethod("test", () => "Hello world");
 		await server.receive({
 			jsonrpc: "2.0",
 			method: "test",
@@ -88,8 +88,8 @@ describe("RpcServer", () => {
 		const server = new RpcServer(sender);
 
 		// Act.
-		server.add("test", (req, res, next) => next());
-		server.add("test", () => {
+		server.addMethod("test", (req, res, next) => next());
+		server.addMethod("test", () => {
 			/* do nothing */
 		});
 		await server.receive({
@@ -115,8 +115,8 @@ describe("RpcServer", () => {
 		const server = new RpcServer(sender);
 
 		// Act.
-		server.add("test", (req, res, next) => next());
-		server.add("test", (req, res, next) => next());
+		server.addMethod("test", (req, res, next) => next());
+		server.addMethod("test", (req, res, next) => next());
 		await server.receive({
 			jsonrpc: "2.0",
 			method: "test",
@@ -144,7 +144,7 @@ describe("RpcServer", () => {
 			method: "/test",
 		};
 
-		const disposable = server.add("/test", listener);
+		const disposable = server.addMethod("/test", listener);
 
 		// Act, assert.
 		await server.receive(req);
@@ -165,7 +165,7 @@ describe("RpcServer", () => {
 		const server = new RpcServer(vi.fn());
 
 		// Act.
-		server.add("/test", ({ name }: MockParameters) => {
+		server.addMethod("/test", ({ name }: MockParameters) => {
 			listener(name);
 		});
 
@@ -190,7 +190,7 @@ describe("RpcServer", () => {
 		const server = new RpcServer(sender);
 
 		// Act.
-		server.add("test", () => "Hello world");
+		server.addMethod("test", () => "Hello world");
 		await server.receive({
 			jsonrpc: "2.0",
 			method: "test",
@@ -214,7 +214,7 @@ describe("RpcServer", () => {
 		const server = new RpcServer(sender);
 
 		// Act.
-		server.add("test", () => {
+		server.addMethod("test", () => {
 			/* no result */
 		});
 		await server.receive({
@@ -240,7 +240,7 @@ describe("RpcServer", () => {
 		const server = new RpcServer(sender);
 
 		// Act.
-		server.add("err", () => {
+		server.addMethod("err", () => {
 			throw new Error("Something went wrong");
 		});
 

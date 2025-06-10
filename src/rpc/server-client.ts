@@ -14,9 +14,9 @@ export function createRpcServerClient(send: RpcSender, options?: RpcClientOption
 	const server = new RpcServer(send);
 
 	return {
-		add: server.add,
-		notify: client.notify,
-		request: client.request,
+		addMethod: server.addMethod.bind(server),
+		notify: client.notify.bind(client),
+		request: client.request.bind(client),
 		async receive(value: JsonValue): Promise<boolean> {
 			return (await client.receive(value)) || (await server.receive(value));
 		},
@@ -27,7 +27,7 @@ export function createRpcServerClient(send: RpcSender, options?: RpcClientOption
  * An RPC server-and-client, capable of receiving and sending requests and notifications.
  */
 type RpcClientServer = Pick<RpcClient, "notify" | "request"> &
-	Pick<RpcServer, "add"> & {
+	Pick<RpcServer, "addMethod"> & {
 		/**
 		 * Attempts to process the specified value as a request or response.
 		 * @param value Value to process.
