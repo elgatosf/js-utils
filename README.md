@@ -24,12 +24,30 @@ Creates a new function that implements `Symbol.dispose` and accepts a disposer f
 ```js
 import { deferredDisposable } from "@elgato/utils";
 
-const cleanup = () => console.log("Hello world")
-using (deferredDisposable(cleanup)) {
+{
+    using deferredDisposable(() => console.log("Hello world"));
     // ...
 }
 
 // "Hello world"
+```
+
+### `DisposableStack`
+
+Stack of managed resources, controlled by a single disposer. Partial polyfill of TC39 Explicit Resource Management's `DisposableStack`.
+
+```js
+import { DisposableStack } from "@elgato/utils";
+
+{
+    using stack = new DisposableStack();
+    stack.defer(() => "Hello");
+    stack.defer(() => "world");
+    // ...
+}
+
+// "Hello"
+// "world"
 ```
 
 ## Events
