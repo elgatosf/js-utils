@@ -1,5 +1,5 @@
-import { type IDisposable } from "../disposable.js";
 import { EventEmitter } from "../event-emitter.js";
+import { type IDisposable } from "../explicit-resource-management/disposable.js";
 import type { JsonValue } from "../json.js";
 import { JsonRpcErrorCode } from "./json-rpc/error.js";
 import { JsonRpcRequest } from "./json-rpc/request.js";
