@@ -1,6 +1,6 @@
 {
     "name": "@elgato/utils",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "description": "Utilities used throughout the Elgato ecosystem.",
     "type": "module",
     "files": [
