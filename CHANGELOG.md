@@ -12,9 +12,15 @@
 
 # Change Log
 
+## 0.2.1
+
+### 🐞 Fix
+
+- Fix missing type export for `RpcServerClient`.
+
 ## 0.2.0
 
-♻️ Refactor
+### ♻️ Refactor
 
 - Update `RpcClient` to accept options.
 - Replace `unidentifiedResponse` event in `RpcClient` with `options.error`.
@@ -23,7 +29,7 @@
 - Rename `RpcServer.add` to `RpcServer.addMethod`.
 - Remove requirement of a result from `RpcSender`.
 
-🐞 Fix
+### 🐞 Fix
 
 - Remove `node:stream` import within `RpcClient`.
 
