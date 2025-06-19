@@ -9,7 +9,7 @@ import { RpcServer } from "./server.js";
  * @param options the options.
  * @returns The RPC server-and-client.
  */
-export function createRpcServerClient(send: RpcSender, options?: RpcClientOptions): RpcClientServer {
+export function createRpcServerClient(send: RpcSender, options?: RpcClientOptions): RpcServerClient {
 	const client = new RpcClient(send, options);
 	const server = new RpcServer(send);
 
@@ -26,7 +26,7 @@ export function createRpcServerClient(send: RpcSender, options?: RpcClientOption
 /**
  * An RPC server-and-client, capable of receiving and sending requests and notifications.
  */
-type RpcClientServer = Pick<RpcClient, "notify" | "request"> &
+export type RpcServerClient = Pick<RpcClient, "notify" | "request"> &
 	Pick<RpcServer, "addMethod"> & {
 		/**
 		 * Attempts to process the specified value as a request or response.
