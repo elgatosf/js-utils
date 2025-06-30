@@ -1,5 +1,4 @@
 export * from "./console-target.js";
-export * from "./file-target.js";
 export * from "./format.js";
 export * from "./level.js";
 export * from "./logger.js";

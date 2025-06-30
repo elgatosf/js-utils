@@ -12,6 +12,14 @@
 
 # Change Log
 
+## 0.3.0
+
+### ♻️ Refactor
+
+- Update Node.js functionality to be optional.
+- `FileTarget` is now importable directly via `@elgato/utils/logging/file-target.js`.
+- `FileTarget` removed from `@elgato/utils/logging`.
+
 ## 0.2.1
 
 ### 🐞 Fix
