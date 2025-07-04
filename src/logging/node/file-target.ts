@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import type { LogEntryFormatter } from "./format.js";
-import type { LogEntry, LogTarget } from "./target.js";
+import type { LogEntryFormatter } from "../format.js";
+import type { LogEntry, LogTarget } from "../target.js";
 
 /**
  * Provides a {@link LogTarget} capable of logging to a local file system.

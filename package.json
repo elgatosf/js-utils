@@ -29,6 +29,10 @@
             "types": "./dist/logging/index.d.ts",
             "default": "./dist/logging/index.js"
         },
+        "./logging/*": {
+            "types": "./dist/logging/node/*.d.ts",
+            "default": "./dist/logging/node/*"
+        },
         "./rpc": {
             "types": "./dist/rpc/index.d.ts",
             "default": "./dist/rpc/index.js"
