@@ -1,6 +1,6 @@
-export * from "./disposable.js";
 export * from "./enumerable.js";
 export * from "./event-emitter.js";
+export * from "./explicit-resource-management/index.js";
 export * from "./json.js";
 export * from "./lazy.js";
 export * from "./objects.js";
