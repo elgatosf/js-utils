@@ -14,6 +14,10 @@
 
 ## 0.3.0
 
+### ✨ New
+
+- Add `DisposableStack` to manage multiple disposables.
+
 ### ♻️ Refactor
 
 - Update Node.js functionality to be optional.
