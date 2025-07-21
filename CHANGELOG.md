@@ -12,6 +12,12 @@
 
 # Change Log
 
+## 0.3.1
+
+### 🐞 Fix
+
+- Fix default timeout of RPC requests.
+
 ## 0.3.0
 
 ### ✨ New

@@ -158,13 +158,54 @@ describe("RpcClient", () => {
 	});
 
 	/**
+	 * Asserts the timeout monitor is correctly configured.
+	 */
+	describe("timeout", () => {
+		it("has a default", async () => {
+			// Arrange.
+			vi.spyOn(globalThis, "setTimeout");
+
+			// Act.
+			await client.request("test");
+			await client.request({
+				method: "test",
+				params: {
+					name: "Elgato",
+				},
+			});
+
+			// Assert.
+			expect(setTimeout).toHaveBeenCalledTimes(2);
+			expect(setTimeout).toHaveBeenNthCalledWith<Parameters<typeof setTimeout>>(1, expect.any(Function), 30000);
+			expect(setTimeout).toHaveBeenNthCalledWith<Parameters<typeof setTimeout>>(2, expect.any(Function), 30000);
+		});
+
+		it("uses specified timeout", async () => {
+			// Arrange.
+			vi.spyOn(globalThis, "setTimeout");
+
+			// Act.
+			await client.request({
+				method: "test",
+				params: {
+					name: "Elgato",
+				},
+				timeout: 1,
+			});
+
+			// Assert.
+			expect(setTimeout).toHaveBeenCalledExactlyOnceWith<Parameters<typeof setTimeout>>(expect.any(Function), 1);
+		});
+	});
+
+	/**
 	 * Asserts errors are appropriately mapped from a response.
 	 */
 	it("maps errors", async () => {
 		// Arrange, act.
 		const res = await client.request("err");
 
-		// Asserts.
+		// Assert.
 		expect(res.ok).toBe(false);
 		if (!res.ok) {
 			expect(res.error.code).toBe(1);

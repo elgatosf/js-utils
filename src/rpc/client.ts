@@ -11,6 +11,11 @@ import type { RpcSender } from "./sender.js";
  */
 export class RpcClient {
 	/**
+	 * The timeout, in milliseconds, used when the request does not have a timeout specified; default 30 seconds.
+	 */
+	static readonly #DEFAULT_TIMEOUT = 30000;
+
+	/**
 	 * The client's options.
 	 */
 	readonly #options: Required<RpcClientOptions>;
@@ -163,7 +168,7 @@ export class RpcClient {
 		request: RpcRequestOptions,
 	): Promise<RpcResponse<TResult>> {
 		const id = crypto.randomUUID();
-		const { method, params, timeout } = request;
+		const { method, params, timeout = RpcClient.#DEFAULT_TIMEOUT } = request;
 
 		// Initialize the response handler.
 		const response = new Promise<RpcResponse<TResult>>((resolve) => {
