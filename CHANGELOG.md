@@ -12,6 +12,12 @@
 
 # Change Log
 
+## vNext
+
+- Add support for monitoring new and removed events to align more closely with Node.js implementation.
+    - Emits `newListener` when listeners are added.
+    - Emits `removeListener` when listeners are removed.
+
 ## 0.3.1
 
 ### 🐞 Fix

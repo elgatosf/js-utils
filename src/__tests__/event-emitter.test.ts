@@ -366,6 +366,163 @@ describe("EventEmitter", () => {
 		});
 	});
 
+	describe("listener events", () => {
+		/**
+		 * Asserts the built-in `newListener` event is emitted.
+		 */
+		describe("newListener", () => {
+			test("adding listeners", () => {
+				// Arrange.
+				const newListenerFn = vi.fn();
+				const listeners = [vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn()];
+
+				const emitter = new EventEmitter<EventMap>();
+				emitter.addListener("newListener", newListenerFn);
+
+				// Act.
+				emitter.addListener("another", listeners[0]);
+				emitter.disposableOn("array", listeners[1]);
+				emitter.on("empty", listeners[2]);
+				emitter.once("message", listeners[3]);
+				emitter.prependListener("other", listeners[4]);
+				emitter.prependOnceListener("another", listeners[5]);
+
+				// Assert.
+				expect(newListenerFn).toHaveBeenCalledTimes(6);
+				expect(newListenerFn).toHaveBeenNthCalledWith(1, "another", listeners[0]);
+				expect(newListenerFn).toHaveBeenNthCalledWith(2, "array", listeners[1]);
+				expect(newListenerFn).toHaveBeenNthCalledWith(3, "empty", listeners[2]);
+				expect(newListenerFn).toHaveBeenNthCalledWith(4, "message", listeners[3]);
+				expect(newListenerFn).toHaveBeenNthCalledWith(5, "other", listeners[4]);
+				expect(newListenerFn).toHaveBeenNthCalledWith(6, "another", listeners[5]);
+			});
+
+			/**
+			 * Asserts the `newListener` is not emitted when for new `newListener` listeners.
+			 */
+			test("does not emit for self", () => {
+				// Arrange, act, assert.
+				const emitter = new EventEmitter<EventMap>();
+				expect(() => {
+					emitter.addListener("newListener", vi.fn()); // Monitor stack overflow errors.
+				}).not.toThrow();
+			});
+
+			/**
+			 * Asserts the `newListener` is emitted for new `removeListener` listeners.
+			 */
+			test("emits for removeListener", () => {
+				// Arrange.
+				const newListenerFn = vi.fn();
+				const removeListenerFn = vi.fn();
+
+				const emitter = new EventEmitter<EventMap>();
+				emitter.addListener("newListener", newListenerFn);
+
+				// Act.
+				emitter.addListener("removeListener", removeListenerFn);
+
+				// Assert.
+				expect(newListenerFn).toHaveBeenCalledExactlyOnceWith("removeListener", removeListenerFn);
+			});
+		});
+
+		/**
+		 * Asserts the built-in `removeListener` event is emitted.
+		 */
+		describe("removeListener", () => {
+			/**
+			 * Asserts `removeListener` is emitted when a listener is explicitly removed.
+			 */
+			test("removing listeners", () => {
+				// Arrange.
+				const removeListenerFn = vi.fn();
+				const listeners = [vi.fn(), vi.fn(), vi.fn(), vi.fn()];
+
+				const emitter = new EventEmitter<EventMap>();
+				emitter.addListener("removeListener", removeListenerFn);
+
+				emitter.addListener("another", listeners[0]);
+				emitter.addListener("another", listeners[1]);
+				emitter.prependListener("another", listeners[2]);
+
+				emitter.addListener("array", listeners[3]);
+
+				// Act.
+				emitter.removeAllListeners("another");
+				emitter.removeListener("array", listeners[3]);
+
+				// Assert.
+				expect(removeListenerFn).toHaveBeenCalledTimes(4);
+				expect(removeListenerFn).toHaveBeenNthCalledWith(1, "another", listeners[2]); // prepend
+				expect(removeListenerFn).toHaveBeenNthCalledWith(2, "another", listeners[0]);
+				expect(removeListenerFn).toHaveBeenNthCalledWith(3, "another", listeners[1]);
+				expect(removeListenerFn).toHaveBeenNthCalledWith(4, "array", listeners[3]);
+			});
+
+			/**
+			 * Asserts `removeListener` is emitted when after a "once" listener is emitted.
+			 */
+			test("once listeners", () => {
+				// Arrange.
+				const removeListenerFn = vi.fn();
+				const listeners = [vi.fn(), vi.fn(), vi.fn(), vi.fn()];
+
+				const emitter = new EventEmitter<EventMap>();
+				emitter.addListener("removeListener", removeListenerFn);
+
+				emitter.once("another", listeners[0]);
+				emitter.once("another", listeners[1]);
+				emitter.prependOnceListener("another", listeners[2]);
+
+				// Act.
+
+				emitter.emit("another", 1);
+
+				// Assert.
+				expect(removeListenerFn).toHaveBeenCalledTimes(3);
+				expect(removeListenerFn).toHaveBeenNthCalledWith(1, "another", listeners[2]); // prepend
+				expect(removeListenerFn).toHaveBeenNthCalledWith(2, "another", listeners[0]);
+				expect(removeListenerFn).toHaveBeenNthCalledWith(3, "another", listeners[1]);
+			});
+
+			/**
+			 * Asserts `removeListener` is emitted when after a listener is disposed.
+			 */
+			test("disposable listeners", () => {
+				// Arrange.
+				const removeListenerFn = vi.fn();
+				const listener = vi.fn();
+
+				const emitter = new EventEmitter<EventMap>();
+				emitter.addListener("removeListener", removeListenerFn);
+
+				// Act.
+				emitter.disposableOn("another", listener).dispose();
+
+				// Assert.
+				expect(removeListenerFn).toHaveBeenCalledTimes(1);
+				expect(removeListenerFn).toHaveBeenNthCalledWith(1, "another", listener);
+			});
+
+			/**
+			 * Asserts the `removeListener` is not emitted when listener for `removeListener` is removed.
+			 */
+			test("does not emit for self", () => {
+				// Arrange.
+				const removeListenerFn = vi.fn();
+				const emitter = new EventEmitter<EventMap>();
+				emitter.addListener("removeListener", removeListenerFn);
+
+				// Act.
+				emitter.removeAllListeners("removeListener");
+
+				// Act.
+				expect(removeListenerFn).not.toHaveBeenCalled();
+			});
+		});
+	});
+
 	/* eslint-disable @typescript-eslint/no-unused-vars */
 	describe("types", () => {
 		/**
@@ -394,7 +551,7 @@ describe("EventEmitter", () => {
 
 			// Assert.
 			expectTypeOf(emitter.eventNames()).toEqualTypeOf<
-				("another" | "array" | "empty" | "message" | "other" | (string & {}))[]
+				("another" | "array" | "empty" | "message" | "newListener" | "other" | "removeListener" | (string & {}))[]
 			>();
 
 			// @ts-expect-error: arguments of type `string` are not valid
@@ -407,7 +564,7 @@ describe("EventEmitter", () => {
 		/**
 		 * Event arguments.
 		 */
-		it("events args", () => {
+		it("event args", () => {
 			// Arrange, act, assert.
 			const emitter = new EventEmitter<EventMap>();
 			emitter.once("empty", (...args) => expectTypeOf(args).toEqualTypeOf<[]>());
@@ -419,6 +576,32 @@ describe("EventEmitter", () => {
 				{ invalid: string },
 				"invalid"
 			>;
+		});
+
+		/**
+		 * Event arguments for built-in events
+		 */
+		it("event args (built in)", () => {
+			// Arrange.
+			type UserServiceEventMap = {
+				"user.create": [name: string];
+				"user.get": [id: number];
+			};
+
+			// Act.
+			const emitter = new EventEmitter<UserServiceEventMap>();
+
+			// Assert
+			emitter.once("newListener", (...args) =>
+				expectTypeOf(args).toEqualTypeOf<
+					["user.create", (name: string) => void] | ["user.get", (id: number) => void]
+				>(),
+			);
+			emitter.once("removeListener", (...args) =>
+				expectTypeOf(args).toEqualTypeOf<
+					["user.create", (name: string) => void] | ["user.get", (id: number) => void]
+				>(),
+			);
 		});
 	});
 	/* eslint-enable @typescript-eslint/no-unused-vars */
