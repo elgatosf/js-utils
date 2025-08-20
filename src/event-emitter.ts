@@ -20,7 +20,7 @@ export class EventEmitter<TMap extends EventMap<TMap>> {
 		eventName: TEventName,
 		listener: (...args: TArgs) => void,
 	): this {
-		return this.on(eventName, listener);
+		return this.add(eventName, listener, (listeners) => listeners.push({ listener }));
 	}
 
 	/**
@@ -33,7 +33,7 @@ export class EventEmitter<TMap extends EventMap<TMap>> {
 		eventName: TEventName,
 		listener: (...args: TArgs) => void,
 	): IDisposable {
-		this.on(eventName, listener);
+		this.add(eventName, listener, (listeners) => listeners.push({ listener }));
 		return deferredDisposable(() => this.removeListener(eventName, listener));
 	}
 
@@ -230,7 +230,8 @@ export class EventEmitter<TMap extends EventMap<TMap>> {
 
 		fn(listeners);
 		if (eventName !== "newListener") {
-			this.emit("newListener", ...([eventName, listener] as EventArgs<TMap, "newListener">));
+			const args = [eventName, listener] as EventArgs<TMap, "newListener">;
+			this.emit("newListener", ...args);
 		}
 
 		return this;
@@ -250,7 +251,8 @@ export class EventEmitter<TMap extends EventMap<TMap>> {
 		const [{ listener }] = listeners.splice(index, 1);
 
 		if (eventName !== "removeListener") {
-			this.emit("removeListener", ...([eventName, listener] as EventArgs<TMap, "removeListener">));
+			const args = [eventName, listener] as EventArgs<TMap, "removeListener">;
+			this.emit("removeListener", ...args);
 		}
 	}
 }
