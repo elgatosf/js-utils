@@ -1,3 +1,4 @@
+import { EventEmitter } from "../event-emitter.js";
 import type { JsonObject } from "../json.js";
 import { freeze, get } from "../objects.js";
 import { defaultLanguage, type Language } from "./language.js";
@@ -5,16 +6,16 @@ import { defaultLanguage, type Language } from "./language.js";
 /**
  * Internalization provider, responsible for managing localizations and translating resources.
  */
-export class I18nProvider<T extends string> {
+export class I18nProvider<T extends string> extends EventEmitter<I18nProviderEventMap<T>> {
+	/**
+	 * Backing field for the default language.
+	 */
+	#language: Language<T>;
+
 	/**
 	 * Map of localized resources, indexed by their language.
 	 */
 	readonly #translations: Map<Language<T>, JsonObject | null> = new Map();
-
-	/**
-	 * Default language of the provider.
-	 */
-	readonly #language: Language<T>;
 
 	/**
 	 * Function responsible for providing localized resources for a given language.
@@ -27,8 +28,29 @@ export class I18nProvider<T extends string> {
 	 * @param readTranslations Function responsible for providing localized resources for a given language.
 	 */
 	constructor(language: Language<T>, readTranslations: TranslationsReader<T>) {
+		super();
+
 		this.#language = language;
 		this.#readTranslations = readTranslations;
+	}
+
+	/**
+	 * The default language of the provider.
+	 * @returns The language.
+	 */
+	public get language(): Language<T> {
+		return this.#language;
+	}
+
+	/**
+	 * The default language of the provider.
+	 * @param value The language.
+	 */
+	public set language(value: Language<T>) {
+		if (this.#language !== value) {
+			this.#language = value;
+			this.emit("languageChange", value);
+		}
 	}
 
 	/**
@@ -38,7 +60,7 @@ export class I18nProvider<T extends string> {
 	 * @param language Optional language to get the translation for; otherwise the default language.
 	 * @returns The translation; otherwise the key.
 	 */
-	public t(key: string, language: Language<T> = this.#language): string {
+	public t(key: string, language: Language<T> = this.language): string {
 		return this.translate(key, language);
 	}
 
@@ -49,7 +71,7 @@ export class I18nProvider<T extends string> {
 	 * @param language Optional language to get the translation for; otherwise the default language.
 	 * @returns The translation; otherwise the key.
 	 */
-	public translate(key: string, language: Language<T> = this.#language): string {
+	public translate(key: string, language: Language<T> = this.language): string {
 		// Determine the languages to search for.
 		const languages = new Set<Language<T>>([
 			language,
@@ -87,6 +109,16 @@ export class I18nProvider<T extends string> {
 		return translations;
 	}
 }
+
+/**
+ * Events that can occur as part of the {@link I18nProvider}.
+ */
+type I18nProviderEventMap<T extends string> = {
+	/**
+	 * Occurs when the language changes.
+	 */
+	languageChange: [language: Language<T>];
+};
 
 /**
  * Function responsible for providing localized resources for a given language.
