@@ -20,7 +20,7 @@ export class EventEmitter<TMap extends EventMap<TMap>> {
 		eventName: TEventName,
 		listener: (...args: TArgs) => void,
 	): this {
-		return this.on(eventName, listener);
+		return this.add(eventName, listener, (listeners) => listeners.push({ listener }));
 	}
 
 	/**
@@ -33,7 +33,7 @@ export class EventEmitter<TMap extends EventMap<TMap>> {
 		eventName: TEventName,
 		listener: (...args: TArgs) => void,
 	): IDisposable {
-		this.addListener(eventName, listener);
+		this.add(eventName, listener, (listeners) => listeners.push({ listener }));
 		return deferredDisposable(() => this.removeListener(eventName, listener));
 	}
 
@@ -55,7 +55,7 @@ export class EventEmitter<TMap extends EventMap<TMap>> {
 		for (let i = 0; i < listeners.length; ) {
 			const { listener, once } = listeners[i];
 			if (once) {
-				listeners.splice(i, 1);
+				this.remove(eventName, listeners, i);
 			} else {
 				i++;
 			}
@@ -120,10 +120,10 @@ export class EventEmitter<TMap extends EventMap<TMap>> {
 		eventName: TEventName,
 		listener: (...args: TArgs) => void,
 	): this {
-		const listeners = this.events.get(eventName) || [];
+		const listeners = this.events.get(eventName) ?? [];
 		for (let i = listeners.length - 1; i >= 0; i--) {
 			if (listeners[i].listener === listener) {
-				listeners.splice(i, 1);
+				this.remove(eventName, listeners, i);
 			}
 		}
 
@@ -140,7 +140,7 @@ export class EventEmitter<TMap extends EventMap<TMap>> {
 		eventName: TEventName,
 		listener: (...args: TArgs) => void,
 	): this {
-		return this.add(eventName, (listeners) => listeners.push({ listener }));
+		return this.add(eventName, listener, (listeners) => listeners.push({ listener }));
 	}
 
 	/**
@@ -153,7 +153,7 @@ export class EventEmitter<TMap extends EventMap<TMap>> {
 		eventName: TEventName,
 		listener: (...args: TArgs) => void,
 	): this {
-		return this.add(eventName, (listeners) => listeners.push({ listener, once: true }));
+		return this.add(eventName, listener, (listeners) => listeners.push({ listener, once: true }));
 	}
 
 	/**
@@ -166,7 +166,7 @@ export class EventEmitter<TMap extends EventMap<TMap>> {
 		eventName: TEventName,
 		listener: (...args: TArgs) => void,
 	): this {
-		return this.add(eventName, (listeners) => listeners.splice(0, 0, { listener }));
+		return this.add(eventName, listener, (listeners) => listeners.splice(0, 0, { listener }));
 	}
 
 	/**
@@ -179,7 +179,7 @@ export class EventEmitter<TMap extends EventMap<TMap>> {
 		eventName: TEventName,
 		listener: (...args: TArgs) => void,
 	): this {
-		return this.add(eventName, (listeners) => listeners.splice(0, 0, { listener, once: true }));
+		return this.add(eventName, listener, (listeners) => listeners.splice(0, 0, { listener, once: true }));
 	}
 
 	/**
@@ -188,6 +188,11 @@ export class EventEmitter<TMap extends EventMap<TMap>> {
 	 * @returns This instance with the event listeners removed
 	 */
 	public removeAllListeners<TEventName extends EventsOf<TMap>>(eventName: TEventName): this {
+		const listeners = this.events.get(eventName) ?? [];
+		while (listeners.length > 0) {
+			this.remove(eventName, listeners, 0);
+		}
+
 		this.events.delete(eventName);
 		return this;
 	}
@@ -208,11 +213,13 @@ export class EventEmitter<TMap extends EventMap<TMap>> {
 	/**
 	 * Adds the event {@link listener} for the event named {@link eventName}.
 	 * @param eventName Name of the event.
+	 * @param listener Event handler function.
 	 * @param fn Function responsible for adding the new event handler function.
 	 * @returns This instance with event {@link listener} added.
 	 */
-	private add<TEventName extends EventsOf<TMap>>(
+	private add<TEventName extends EventsOf<TMap>, TArgs extends EventArgs<TMap, TEventName>>(
 		eventName: TEventName,
+		listener: (...args: TArgs) => void,
 		fn: (listeners: EventListener[]) => void,
 	): this {
 		let listeners = this.events.get(eventName);
@@ -222,9 +229,38 @@ export class EventEmitter<TMap extends EventMap<TMap>> {
 		}
 
 		fn(listeners);
+		if (eventName !== "newListener") {
+			const args = [eventName, listener] as EventArgs<TMap, "newListener">;
+			this.emit("newListener", ...args);
+		}
+
 		return this;
 	}
+
+	/**
+	 * Removes the listener at the given index.
+	 * @param eventName Name of the event.
+	 * @param listeners Listeners registered with the event.
+	 * @param index Index of the listener to remove.
+	 */
+	private remove<TEventName extends EventsOf<TMap>>(
+		eventName: TEventName,
+		listeners: EventListener[],
+		index: number,
+	): void {
+		const [{ listener }] = listeners.splice(index, 1);
+
+		if (eventName !== "removeListener") {
+			const args = [eventName, listener] as EventArgs<TMap, "removeListener">;
+			this.emit("removeListener", ...args);
+		}
+	}
 }
+
+/**
+ * Events that occur within all emitters when listeners change.
+ */
+type EventEmitterListenerEvent = "newListener" | "removeListener";
 
 /**
  * A map of events and their arguments (represented as an array) that are supplied to the event's listener when the event is emitted.
@@ -241,7 +277,7 @@ type EventMap<T> = {
 /**
  * Parsed {@link EventMap} whereby each property is a `string` that denotes an event name, and the associated value type defines the listener arguments.
  */
-export type EventsOf<TMap extends EventMap<TMap>> = keyof TMap | (string & {});
+export type EventsOf<TMap extends EventMap<TMap>> = EventEmitterListenerEvent | keyof TMap | (string & {});
 
 /**
  * Parses the event arguments for the specified event from the event map.
@@ -250,7 +286,17 @@ export type EventArgs<TMap extends EventMap<TMap>, TEvent extends EventsOf<TMap>
 	? TMap[TEvent] extends unknown[]
 		? TMap[TEvent]
 		: never
-	: unknown[];
+	: TEvent extends EventEmitterListenerEvent
+		? EventArgUnion<TMap>
+		: unknown[];
+
+/**
+ * Converts an event map to a union of event arguments, allowing the `newListener` and `removeListener`
+ * event listeners to be typed.
+ */
+export type EventArgUnion<TMap extends EventMap<TMap>> = {
+	[K in keyof TMap]: TMap[K] extends unknown[] ? [K, (...args: TMap[K]) => void] : never;
+}[keyof TMap];
 
 /**
  * An event listener associated with an event.
