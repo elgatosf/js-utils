@@ -12,11 +12,12 @@
 
 # Change Log
 
-## vNext
+## 0.4.0
 
 - Add support for monitoring new and removed events to align more closely with Node.js implementation.
     - Emits `newListener` when listeners are added.
     - Emits `removeListener` when listeners are removed.
+- Add support for changing the default language within an `I18nProvider`.
 
 ## 0.3.1
 
