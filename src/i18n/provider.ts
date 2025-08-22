@@ -1,4 +1,5 @@
 import { EventEmitter } from "../event-emitter.js";
+import type { IDisposable } from "../explicit-resource-management/disposable.js";
 import type { JsonObject } from "../json.js";
 import { freeze, get } from "../objects.js";
 import { defaultLanguage, type Language } from "./language.js";
@@ -6,7 +7,7 @@ import { defaultLanguage, type Language } from "./language.js";
 /**
  * Internalization provider, responsible for managing localizations and translating resources.
  */
-export class I18nProvider<T extends string> extends EventEmitter<I18nProviderEventMap<T>> {
+export class I18nProvider<T extends string> {
 	/**
 	 * Backing field for the default language.
 	 */
@@ -23,13 +24,16 @@ export class I18nProvider<T extends string> extends EventEmitter<I18nProviderEve
 	readonly #readTranslations: TranslationsReader<T>;
 
 	/**
+	 * Internal events handler.
+	 */
+	readonly #events = new EventEmitter<I18nProviderEventMap<T>>();
+
+	/**
 	 * Initializes a new instance of the {@link I18nProvider} class.
 	 * @param language The default language to be used when retrieving translations for a given key.
 	 * @param readTranslations Function responsible for providing localized resources for a given language.
 	 */
 	constructor(language: Language<T>, readTranslations: TranslationsReader<T>) {
-		super();
-
 		this.#language = language;
 		this.#readTranslations = readTranslations;
 	}
@@ -49,8 +53,17 @@ export class I18nProvider<T extends string> extends EventEmitter<I18nProviderEve
 	public set language(value: Language<T>) {
 		if (this.#language !== value) {
 			this.#language = value;
-			this.emit("languageChange", value);
+			this.#events.emit("languageChange", value);
 		}
+	}
+
+	/**
+	 * Adds an event listener that is called when the language within the provider changes.
+	 * @param listener Listener function to be called.
+	 * @returns Resource manager that, when disposed, removes the event listener.
+	 */
+	public onLanguageChange(listener: (language: Language<T>) => void): IDisposable {
+		return this.#events.disposableOn("languageChange", listener);
 	}
 
 	/**

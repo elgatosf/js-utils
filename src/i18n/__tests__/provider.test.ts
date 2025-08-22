@@ -51,6 +51,23 @@ describe("I18nProvider", () => {
 		expect(spyOnTranslate).toHaveBeenNthCalledWith(2, "test", "de");
 	});
 
+	it("emits language change event", () => {
+		// Arrange.
+		const i18n = new I18nProvider<Languages>("en", vi.fn());
+		const listener = vi.fn();
+
+		// Act.
+		i18n.onLanguageChange(listener);
+		i18n.language = "de";
+
+		// Assert.
+		expect(listener).toHaveBeenCalledExactlyOnceWith<[Languages]>("de");
+	});
+
+	describe("language changing", () => {
+		it("emits event", () => {});
+	});
+
 	describe("translating", () => {
 		const localeProvider = vi.fn().mockImplementation((language: Languages) => {
 			switch (language) {
