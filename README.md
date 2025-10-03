@@ -212,6 +212,18 @@ import { withResolvers } "@elgato/utils";
 const { promise, resolve, reject } = withResolvers<string>();
 ```
 
+## Strings
+
+### `format(format, ...args)`
+
+Formats the specified string, replacing placeholders with their associated arguments.
+
+```js
+import { format } from "@elgato/utils";
+
+format("Hello {0}, from {1}", "world", "Elgato"); // Hello world, from Elgato
+```
+
 ## Timers
 
 ### `debounce(fn, delay)`

@@ -12,6 +12,12 @@
 
 # Change Log
 
+## 0.4.1
+
+### ✨ New
+
+- Add string formatting via `format`.
+
 ## 0.4.0
 
 ### ✨ New
