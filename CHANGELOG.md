@@ -12,6 +12,12 @@
 
 # Change Log
 
+## 0.4.2
+
+### ✨ New
+
+- Add serializable JSON types to support objects with `toJSON()`.
+
 ## 0.4.1
 
 ### ✨ New
