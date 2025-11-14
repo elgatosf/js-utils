@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
 
-import { type LogEntry, Logger, type LoggerOptions, type LogLevel, type LogTarget } from "../index.js";
+import { type LogEntry, Logger, type LoggerOptions, LogLevel, type LogTarget } from "../index.js";
 
 describe("Logger", () => {
 	/**
@@ -9,23 +9,23 @@ describe("Logger", () => {
 	it("clones options on construction", () => {
 		// Arrange.
 		const options: LoggerOptions = {
-			level: "error",
+			level: LogLevel.ERROR,
 			targets: [{ write: vi.fn() }],
 		};
 
 		const logger = new Logger(options);
 
 		// Act.
-		logger.setLevel("info");
+		logger.setLevel(LogLevel.INFO);
 		logger.info("Hello world");
 
 		// Assert
-		expect(logger.level).toBe("info");
-		expect(options.level).toBe("error");
+		expect(logger.level).toBe(LogLevel.INFO);
+		expect(options.level).toBe(LogLevel.ERROR);
 		expect(options.targets[0].write).toHaveBeenCalledTimes(1);
 		expect(options.targets[0].write).toHaveBeenCalledWith<[LogEntry]>({
 			data: ["Hello world"],
-			level: "info",
+			level: LogLevel.INFO,
 			scope: "",
 		});
 	});
@@ -36,7 +36,7 @@ describe("Logger", () => {
 	it("writes to all targets", () => {
 		// Arrange.
 		const options: LoggerOptions = {
-			level: "info",
+			level: LogLevel.INFO,
 			targets: [{ write: vi.fn() }, { write: vi.fn() }, { write: vi.fn() }],
 		};
 
@@ -48,7 +48,7 @@ describe("Logger", () => {
 		// Assert
 		const entry: LogEntry = {
 			data: ["Hello world"],
-			level: "info",
+			level: LogLevel.INFO,
 			scope: "",
 		};
 
@@ -89,72 +89,72 @@ describe("Logger", () => {
 			// Arrange.
 			const target = { write: vi.fn() };
 			const parent = new Logger({
-				level: "trace",
-				minimumLevel: "trace",
+				level: LogLevel.TRACE,
+				minimumLevel: LogLevel.TRACE,
 				targets: [target],
 			});
 
 			const logger = scopes.reduce((prev, current) => prev.createScope(current), parent);
 
 			// Act.
-			logger.error("Log error", new Error("error"));
-			logger.warn("Log warn", new Error("warn"));
-			logger.info("Log info", new Error("info"));
-			logger.debug("Log debug", new Error("debug"));
-			logger.trace("Log trace", new Error("trace"));
+			logger.error("Log error", new Error(LogLevel.ERROR.toString()));
+			logger.warn("Log warn", new Error(LogLevel.WARN.toString()));
+			logger.info("Log info", new Error(LogLevel.INFO.toString()));
+			logger.debug("Log debug", new Error(LogLevel.DEBUG.toString()));
+			logger.trace("Log trace", new Error(LogLevel.TRACE.toString()));
 
 			// Assert.
 			expect(target.write).toHaveBeenCalledTimes(5);
 			expect(target.write).toHaveBeenNthCalledWith<[LogEntry]>(1, {
-				level: "error",
+				level: LogLevel.ERROR,
 				data: [
 					"Log error",
 					expect.objectContaining({
-						message: "error",
+						message: LogLevel.ERROR.toString(),
 					}),
 				],
 				scope,
 			});
 
 			expect(target.write).toHaveBeenNthCalledWith<[LogEntry]>(2, {
-				level: "warn",
+				level: LogLevel.WARN,
 				data: [
 					"Log warn",
 					expect.objectContaining({
-						message: "warn",
+						message: LogLevel.WARN.toString(),
 					}),
 				],
 				scope,
 			});
 
 			expect(target.write).toHaveBeenNthCalledWith<[LogEntry]>(3, {
-				level: "info",
+				level: LogLevel.INFO,
 				data: [
 					"Log info",
 					expect.objectContaining({
-						message: "info",
+						message: LogLevel.INFO.toString(),
 					}),
 				],
 				scope,
 			});
 
 			expect(target.write).toHaveBeenNthCalledWith<[LogEntry]>(4, {
-				level: "debug",
+				level: LogLevel.DEBUG,
 				data: [
 					"Log debug",
 					expect.objectContaining({
-						message: "debug",
+						message: LogLevel.DEBUG.toString(),
 					}),
 				],
 				scope,
 			});
 
 			expect(target.write).toHaveBeenNthCalledWith<[LogEntry]>(5, {
-				level: "trace",
+				level: LogLevel.TRACE,
 				data: [
 					"Log trace",
 					expect.objectContaining({
-						message: "trace",
+						message: LogLevel.TRACE.toString(),
 					}),
 				],
 				scope,
@@ -168,54 +168,54 @@ describe("Logger", () => {
 	describe("checks the log level before forwarding to target", () => {
 		let level: LogLevel;
 
-		describe("ERROR", () => {
-			beforeAll(() => (level = "error"));
+		describe("error", () => {
+			beforeAll(() => (level = LogLevel.ERROR));
 
-			it("does log ERROR", () => verify((logger) => logger.error("error"), true));
-			it("does not log WARN", () => verify((logger) => logger.warn("warn"), false));
-			it("does not log INFO", () => verify((logger) => logger.info("info"), false));
-			it("does not log DEBUG", () => verify((logger) => logger.debug("debug"), false));
-			it("does not log TRACE", () => verify((logger) => logger.trace("trace"), false));
+			it("does log ERROR", () => verify((logger) => logger.error(LogLevel.ERROR), true));
+			it("does not log WARN", () => verify((logger) => logger.warn(LogLevel.WARN), false));
+			it("does not log INFO", () => verify((logger) => logger.info(LogLevel.INFO), false));
+			it("does not log DEBUG", () => verify((logger) => logger.debug(LogLevel.DEBUG), false));
+			it("does not log TRACE", () => verify((logger) => logger.trace(LogLevel.TRACE), false));
 		});
 
-		describe("WARN", () => {
-			beforeAll(() => (level = "warn"));
+		describe("warn", () => {
+			beforeAll(() => (level = LogLevel.WARN));
 
-			it("does log ERROR", () => verify((logger) => logger.error("error"), true));
-			it("does log WARN", () => verify((logger) => logger.warn("warn"), true));
-			it("does not log INFO", () => verify((logger) => logger.info("info"), false));
-			it("does not log DEBUG", () => verify((logger) => logger.debug("debug"), false));
-			it("does not log TRACE", () => verify((logger) => logger.trace("trace"), false));
+			it("does log ERROR", () => verify((logger) => logger.error(LogLevel.ERROR), true));
+			it("does log WARN", () => verify((logger) => logger.warn(LogLevel.WARN), true));
+			it("does not log INFO", () => verify((logger) => logger.info(LogLevel.INFO), false));
+			it("does not log DEBUG", () => verify((logger) => logger.debug(LogLevel.DEBUG), false));
+			it("does not log TRACE", () => verify((logger) => logger.trace(LogLevel.TRACE), false));
 		});
 
-		describe("INFO", () => {
-			beforeAll(() => (level = "info"));
+		describe("info", () => {
+			beforeAll(() => (level = LogLevel.INFO));
 
-			it("does log ERROR", () => verify((logger) => logger.error("error"), true));
-			it("does log WARN", () => verify((logger) => logger.warn("warn"), true));
-			it("does log INFO", () => verify((logger) => logger.info("info"), true));
-			it("does not log DEBUG", () => verify((logger) => logger.debug("debug"), false));
-			it("does not log TRACE", () => verify((logger) => logger.trace("trace"), false));
+			it("does log ERROR", () => verify((logger) => logger.error(LogLevel.ERROR), true));
+			it("does log WARN", () => verify((logger) => logger.warn(LogLevel.WARN), true));
+			it("does log INFO", () => verify((logger) => logger.info(LogLevel.INFO), true));
+			it("does not log DEBUG", () => verify((logger) => logger.debug(LogLevel.DEBUG), false));
+			it("does not log TRACE", () => verify((logger) => logger.trace(LogLevel.TRACE), false));
 		});
 
-		describe("DEBUG", () => {
-			beforeAll(() => (level = "debug"));
+		describe("debug", () => {
+			beforeAll(() => (level = LogLevel.DEBUG));
 
-			it("does log ERROR", () => verify((logger) => logger.error("error"), true));
-			it("does log WARN", () => verify((logger) => logger.warn("warn"), true));
-			it("does log INFO", () => verify((logger) => logger.info("info"), true));
-			it("does log DEBUG", () => verify((logger) => logger.debug("debug"), true));
-			it("does not log TRACE", () => verify((logger) => logger.trace("trace"), false));
+			it("does log ERROR", () => verify((logger) => logger.error(LogLevel.ERROR), true));
+			it("does log WARN", () => verify((logger) => logger.warn(LogLevel.WARN), true));
+			it("does log INFO", () => verify((logger) => logger.info(LogLevel.INFO), true));
+			it("does log DEBUG", () => verify((logger) => logger.debug(LogLevel.DEBUG), true));
+			it("does not log TRACE", () => verify((logger) => logger.trace(LogLevel.TRACE), false));
 		});
 
-		describe("TRACE", () => {
-			beforeAll(() => (level = "trace"));
+		describe("trace", () => {
+			beforeAll(() => (level = LogLevel.TRACE));
 
-			it("does log ERROR", () => verify((logger) => logger.error("error"), true));
-			it("does log WARN", () => verify((logger) => logger.warn("warn"), true));
-			it("does log INFO", () => verify((logger) => logger.info("info"), true));
-			it("does log DEBUG", () => verify((logger) => logger.debug("debug"), true));
-			it("does log TRACE", () => verify((logger) => logger.trace("trace"), true));
+			it("does log ERROR", () => verify((logger) => logger.error(LogLevel.ERROR), true));
+			it("does log WARN", () => verify((logger) => logger.warn(LogLevel.WARN), true));
+			it("does log INFO", () => verify((logger) => logger.info(LogLevel.INFO), true));
+			it("does log DEBUG", () => verify((logger) => logger.debug(LogLevel.DEBUG), true));
+			it("does log TRACE", () => verify((logger) => logger.trace(LogLevel.TRACE), true));
 		});
 
 		/**
@@ -228,7 +228,7 @@ describe("Logger", () => {
 			const target = { write: vi.fn() };
 			const logger = new Logger({
 				level,
-				minimumLevel: "trace",
+				minimumLevel: LogLevel.TRACE,
 				targets: [target],
 			});
 
@@ -247,7 +247,7 @@ describe("Logger", () => {
 		it("inherited by scoped loggers", () => {
 			// Arrange.
 			const parent = new Logger({
-				level: "error",
+				level: LogLevel.ERROR,
 				targets: [{ write: vi.fn() }],
 			});
 
@@ -255,14 +255,14 @@ describe("Logger", () => {
 			const childBefore = parent.createScope("Child (Before)");
 			const grandchildBefore = childBefore.createScope("Grandchild (Before)");
 
-			parent.setLevel("info");
+			parent.setLevel(LogLevel.INFO);
 			const childAfter = parent.createScope("Child (After)");
 
 			// Assert.
-			expect(parent.level).toBe("info");
-			expect(childBefore.level).toBe("info");
-			expect(grandchildBefore.level).toBe("info");
-			expect(childAfter.level).toBe("info");
+			expect(parent.level).toBe(LogLevel.INFO);
+			expect(childBefore.level).toBe(LogLevel.INFO);
+			expect(grandchildBefore.level).toBe(LogLevel.INFO);
+			expect(childAfter.level).toBe(LogLevel.INFO);
 		});
 
 		/**
@@ -271,7 +271,7 @@ describe("Logger", () => {
 		it("inherited from parents with defined log-level", () => {
 			// Arrange.
 			const parent = new Logger({
-				level: "error",
+				level: LogLevel.ERROR,
 				targets: [{ write: vi.fn() }],
 			});
 
@@ -279,13 +279,13 @@ describe("Logger", () => {
 			const child = parent.createScope("Child");
 			const grandchild = child.createScope("Grandchild");
 
-			child.setLevel("warn");
-			parent.setLevel("info");
+			child.setLevel(LogLevel.WARN);
+			parent.setLevel(LogLevel.INFO);
 
 			// Assert.
-			expect(parent.level).toBe("info");
-			expect(child.level).toBe("warn");
-			expect(grandchild.level).toBe("warn");
+			expect(parent.level).toBe(LogLevel.INFO);
+			expect(child.level).toBe(LogLevel.WARN);
+			expect(grandchild.level).toBe(LogLevel.WARN);
 		});
 
 		/**
@@ -294,7 +294,7 @@ describe("Logger", () => {
 		it("defaults when set to undefined", () => {
 			// Arrange.
 			const parent = new Logger({
-				level: "error",
+				level: LogLevel.ERROR,
 				targets: [{ write: vi.fn() }],
 			});
 
@@ -302,14 +302,14 @@ describe("Logger", () => {
 			const child = parent.createScope("Child");
 			const grandchild = child.createScope("Grandchild");
 
-			child.setLevel("warn");
-			parent.setLevel("info");
+			child.setLevel(LogLevel.WARN);
+			parent.setLevel(LogLevel.INFO);
 			child.setLevel();
 
 			// Assert (1).
-			expect(parent.level).toBe("info");
-			expect(child.level).toBe("info");
-			expect(grandchild.level).toBe("info");
+			expect(parent.level).toBe(LogLevel.INFO);
+			expect(child.level).toBe(LogLevel.INFO);
+			expect(grandchild.level).toBe(LogLevel.INFO);
 		});
 	});
 
@@ -319,64 +319,64 @@ describe("Logger", () => {
 	describe("log-level validation", () => {
 		const testCases = [
 			{
-				minimumLevel: "info",
+				minimumLevel: LogLevel.INFO,
 				name: "Can be ERROR",
-				level: "error" as const,
-				expected: "error",
+				level: LogLevel.ERROR,
+				expected: LogLevel.ERROR,
 			},
 			{
-				minimumLevel: "trace",
+				minimumLevel: LogLevel.TRACE,
 				name: "Can be ERROR",
-				level: "error" as const,
-				expected: "error",
+				level: LogLevel.ERROR,
+				expected: LogLevel.ERROR,
 			},
 			{
-				minimumLevel: "info",
+				minimumLevel: LogLevel.INFO,
 				name: "Can be WARN",
-				level: "warn" as const,
-				expected: "warn",
+				level: LogLevel.WARN,
+				expected: LogLevel.WARN,
 			},
 			{
-				minimumLevel: "trace",
+				minimumLevel: LogLevel.TRACE,
 				name: "Can be WARN",
-				level: "warn" as const,
-				expected: "warn",
+				level: LogLevel.WARN,
+				expected: LogLevel.WARN,
 			},
 			{
-				minimumLevel: "info",
+				minimumLevel: LogLevel.INFO,
 				name: "Can be INFO",
-				level: "info" as const,
-				expected: "info",
+				level: LogLevel.INFO,
+				expected: LogLevel.INFO,
 			},
 			{
-				minimumLevel: "trace",
+				minimumLevel: LogLevel.TRACE,
 				name: "Can be INFO",
-				level: "info" as const,
-				expected: "info",
+				level: LogLevel.INFO,
+				expected: LogLevel.INFO,
 			},
 			{
-				minimumLevel: "info",
+				minimumLevel: LogLevel.INFO,
 				name: "Cannot be DEBUG",
-				level: "debug" as const,
-				expected: "info",
+				level: LogLevel.DEBUG,
+				expected: LogLevel.INFO,
 			},
 			{
-				minimumLevel: "trace",
+				minimumLevel: LogLevel.TRACE,
 				name: "Can be DEBUG",
-				level: "debug" as const,
-				expected: "debug",
+				level: LogLevel.DEBUG,
+				expected: LogLevel.DEBUG,
 			},
 			{
-				minimumLevel: "info",
+				minimumLevel: LogLevel.INFO,
 				name: "Cannot be TRACE",
-				level: "trace" as const,
-				expected: "info",
+				level: LogLevel.TRACE,
+				expected: LogLevel.INFO,
 			},
 			{
-				minimumLevel: "trace",
+				minimumLevel: LogLevel.TRACE,
 				name: "Can be TRACE",
-				level: "trace" as const,
-				expected: "trace",
+				level: LogLevel.TRACE,
+				expected: LogLevel.TRACE,
 			},
 		];
 
@@ -388,7 +388,7 @@ describe("Logger", () => {
 				// Arrange.
 				const options: LoggerOptions = {
 					level,
-					minimumLevel: minimumLevel as "info" | "trace",
+					minimumLevel,
 					targets: [{ write: vi.fn() }],
 				};
 
@@ -407,8 +407,8 @@ describe("Logger", () => {
 			it.each(testCases)("$name when minimumLevel is $minimumLevel", ({ level, expected, minimumLevel }) => {
 				// Arrange.
 				const options: LoggerOptions = {
-					level: "error",
-					minimumLevel: minimumLevel as "info" | "trace",
+					level: LogLevel.ERROR,
+					minimumLevel,
 					targets: [{ write: vi.fn() }],
 				};
 

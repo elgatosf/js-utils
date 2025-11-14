@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-import { stringFormatter } from "../index.js";
+import { LogLevel, stringFormatter } from "../index.js";
 
 describe("stringFormatter", () => {
 	describe("data only", () => {
@@ -12,7 +12,7 @@ describe("stringFormatter", () => {
 			const format = stringFormatter({ dataOnly: true });
 			const actual = format({
 				data: ["Hello", "World", { foo: "bar" }, true],
-				level: "info",
+				level: LogLevel.INFO,
 				scope: "Test",
 			});
 
@@ -29,7 +29,7 @@ describe("stringFormatter", () => {
 			const format = stringFormatter({ dataOnly: true });
 			const actual = format({
 				data: ["Encountered an error", err, true],
-				level: "info",
+				level: LogLevel.INFO,
 				scope: "",
 			});
 
@@ -52,7 +52,7 @@ describe("stringFormatter", () => {
 				const format = stringFormatter();
 				const actual = format({
 					data: ["Hello", "World", { foo: "bar" }, true],
-					level: "info",
+					level: LogLevel.INFO,
 					scope: "Test",
 				});
 
@@ -69,7 +69,7 @@ describe("stringFormatter", () => {
 				const format = stringFormatter();
 				const actual = format({
 					data: ["Encountered an error", err, true],
-					level: "info",
+					level: LogLevel.INFO,
 					scope: "",
 				});
 
@@ -85,27 +85,27 @@ describe("stringFormatter", () => {
 				const testCases = [
 					{
 						name: "ERROR",
-						level: "error" as const,
+						level: LogLevel.ERROR,
 						expected: `${mockedDateString} ERROR Hello world`,
 					},
 					{
 						name: "WARN",
-						level: "warn" as const,
+						level: LogLevel.WARN,
 						expected: `${mockedDateString} WARN  Hello world`,
 					},
 					{
 						name: "INFO",
-						level: "info" as const,
+						level: LogLevel.INFO,
 						expected: `${mockedDateString} INFO  Hello world`,
 					},
 					{
 						name: "DEBUG",
-						level: "debug" as const,
+						level: LogLevel.DEBUG,
 						expected: `${mockedDateString} DEBUG Hello world`,
 					},
 					{
 						name: "TRACE",
-						level: "trace" as const,
+						level: LogLevel.TRACE,
 						expected: `${mockedDateString} TRACE Hello world`,
 					},
 				];
@@ -132,27 +132,27 @@ describe("stringFormatter", () => {
 				const testCases = [
 					{
 						name: "ERROR",
-						level: "error" as const,
+						level: LogLevel.ERROR,
 						expected: `${mockedDateString} ERROR ${scope}: Hello world`,
 					},
 					{
 						name: "WARN",
-						level: "warn" as const,
+						level: LogLevel.WARN,
 						expected: `${mockedDateString} WARN  ${scope}: Hello world`,
 					},
 					{
 						name: "INFO",
-						level: "info" as const,
+						level: LogLevel.INFO,
 						expected: `${mockedDateString} INFO  ${scope}: Hello world`,
 					},
 					{
 						name: "DEBUG",
-						level: "debug" as const,
+						level: LogLevel.DEBUG,
 						expected: `${mockedDateString} DEBUG ${scope}: Hello world`,
 					},
 					{
 						name: "TRACE",
-						level: "trace" as const,
+						level: LogLevel.TRACE,
 						expected: `${mockedDateString} TRACE ${scope}: Hello world`,
 					},
 				];

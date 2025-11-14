@@ -1,51 +1,47 @@
-/* eslint-disable @typescript-eslint/sort-type-constituents */
-
 /**
  * Levels of logging.
  */
-export type LogLevel =
+export const LogLevel = {
 	/**
 	 * Error message used to indicate an error was thrown, or something critically went wrong.
 	 */
-	| "error"
+	ERROR: level("ERROR", 0),
 
 	/**
 	 * Warning message used to indicate something went wrong, but the application is able to recover.
 	 */
-	| "warn"
+	WARN: level("WARN", 1),
 
 	/**
 	 * Information message for general usage.
 	 */
-	| "info"
+	INFO: level("INFO", 2),
 
 	/**
 	 * Debug message used to detail information useful for profiling the applications runtime.
 	 */
-	| "debug"
+	DEBUG: level("DEBUG", 4),
 
 	/**
 	 * Trace message used to monitor low-level information such as method calls, performance tracking, etc.
 	 */
-	| "trace";
+	TRACE: level("TRACE", 5),
+};
 
 /**
- * Gets the priority of the specified log level as a number; low numbers signify a higher priority.
- * @param level Log level.
- * @returns The priority as a number.
+ * Levels of logging.
  */
-export function defcon(level: LogLevel): number {
-	switch (level) {
-		case "error":
-			return 0;
-		case "warn":
-			return 1;
-		case "info":
-			return 2;
-		case "debug":
-			return 3;
-		case "trace":
-		default:
-			return 4;
-	}
+export type LogLevel = (typeof LogLevel)[keyof typeof LogLevel];
+
+/**
+ * Creates a log level.
+ * @param name Name of the level.
+ * @param value Value the level represents.
+ * @returns The log level.
+ */
+function level(name: string, value: number): object {
+	return {
+		toString: (): string => name,
+		valueOf: (): number => value,
+	};
 }

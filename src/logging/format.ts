@@ -22,7 +22,7 @@ export function stringFormatter(opts?: StringFormatOptions): LogEntryFormatter {
 		return (entry: LogEntry) => {
 			const { data, level, scope } = entry;
 
-			let prefix = `${new Date().toISOString()} ${level.toUpperCase().padEnd(5)} `;
+			let prefix = `${new Date().toISOString()} ${level.toString().padEnd(5)} `;
 			if (scope) {
 				prefix += `${scope}: `;
 			}

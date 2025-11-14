@@ -1,4 +1,4 @@
-import { defcon, type LogLevel } from "./level.js";
+import { LogLevel } from "./level.js";
 import type { LogEntry, LogEntryData, LogTarget } from "./target.js";
 
 /**
@@ -25,7 +25,7 @@ export class Logger {
 	 * @param opts Options that define the loggers behavior.
 	 */
 	constructor(opts: LoggerOptions) {
-		this.#options = { minimumLevel: "trace", ...opts };
+		this.#options = { minimumLevel: LogLevel.TRACE, ...opts };
 		this.#scope = this.#options.scope === undefined || this.#options.scope.trim() === "" ? "" : this.#options.scope;
 
 		if (typeof this.#options.level !== "function") {
@@ -69,7 +69,7 @@ export class Logger {
 	 * @returns This instance for chaining.
 	 */
 	public debug(...data: LogEntryData): this {
-		return this.write({ level: "debug", data, scope: this.#scope });
+		return this.write({ level: LogLevel.DEBUG, data, scope: this.#scope });
 	}
 
 	/**
@@ -78,7 +78,7 @@ export class Logger {
 	 * @returns This instance for chaining.
 	 */
 	public error(...data: LogEntryData): this {
-		return this.write({ level: "error", data, scope: this.#scope });
+		return this.write({ level: LogLevel.ERROR, data, scope: this.#scope });
 	}
 
 	/**
@@ -87,7 +87,7 @@ export class Logger {
 	 * @returns This instance for chaining.
 	 */
 	public info(...data: LogEntryData): this {
-		return this.write({ level: "info", data, scope: this.#scope });
+		return this.write({ level: LogLevel.INFO, data, scope: this.#scope });
 	}
 
 	/**
@@ -96,8 +96,8 @@ export class Logger {
 	 * @returns This instance for chaining.
 	 */
 	public setLevel(level?: LogLevel): this {
-		if (level !== undefined && defcon(level) > defcon(this.#options.minimumLevel)) {
-			this.#level = "info";
+		if (level !== undefined && level > this.#options.minimumLevel) {
+			this.#level = LogLevel.INFO;
 		} else {
 			this.#level = level;
 		}
@@ -111,7 +111,7 @@ export class Logger {
 	 * @returns This instance for chaining.
 	 */
 	public trace(...data: LogEntryData): this {
-		return this.write({ level: "trace", data, scope: this.#scope });
+		return this.write({ level: LogLevel.TRACE, data, scope: this.#scope });
 	}
 
 	/**
@@ -120,7 +120,7 @@ export class Logger {
 	 * @returns This instance for chaining.
 	 */
 	public warn(...data: LogEntryData): this {
-		return this.write({ level: "warn", data, scope: this.#scope });
+		return this.write({ level: LogLevel.WARN, data, scope: this.#scope });
 	}
 
 	/**
@@ -129,7 +129,7 @@ export class Logger {
 	 * @returns This instance for chaining.
 	 */
 	public write(entry: LogEntry): this {
-		if (defcon(entry.level) <= defcon(this.level)) {
+		if (entry.level <= this.level) {
 			this.#options.targets.forEach((t) => t.write(entry));
 		}
 
