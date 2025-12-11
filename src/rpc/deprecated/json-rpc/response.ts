@@ -1,6 +1,6 @@
 import { z } from "zod/v4-mini";
 
-import type { JsonObject, JsonPrimitive, JsonValue } from "../../json.js";
+import type { JsonObject, JsonPrimitive, JsonValue } from "../../../json.js";
 import { JsonRpcError } from "./error.js";
 
 /**

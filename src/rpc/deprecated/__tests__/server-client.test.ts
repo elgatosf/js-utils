@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { IDisposable } from "../../explicit-resource-management/disposable.js";
+import type { IDisposable } from "../../../explicit-resource-management/disposable.js";
 import { RpcClient } from "../client.js";
 import { createRpcServerClient } from "../server-client.js";
 import { RpcServer } from "../server.js";

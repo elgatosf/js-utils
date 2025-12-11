@@ -1,4 +1,4 @@
-import type { JsonObject, JsonValue } from "../json.js";
+import type { JsonObject, JsonValue } from "../../json.js";
 
 /**
  * Request options.

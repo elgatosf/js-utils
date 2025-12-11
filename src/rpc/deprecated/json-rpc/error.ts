@@ -1,6 +1,6 @@
 import { z } from "zod/v4-mini";
 
-import type { JsonValue } from "../../json.js";
+import type { JsonValue } from "../../../json.js";
 
 /**
  * Contains information about an error that occurred.

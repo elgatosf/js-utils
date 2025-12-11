@@ -1,6 +1,6 @@
 import { z } from "zod/v4-mini";
 
-import type { JsonObject, JsonValue } from "../../json.js";
+import type { JsonObject, JsonValue } from "../../../json.js";
 
 /**
  * Request object sent to a server.

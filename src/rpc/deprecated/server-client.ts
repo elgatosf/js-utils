@@ -1,4 +1,4 @@
-import { type JsonValue } from "../json.js";
+import { type JsonValue } from "../../json.js";
 import { RpcClient, type RpcClientOptions } from "./client.js";
 import type { RpcSender } from "./sender.js";
 import { RpcServer } from "./server.js";

@@ -1,4 +1,4 @@
-import type { JsonObject, JsonPrimitive, JsonValue } from "../json.js";
+import type { JsonObject, JsonPrimitive, JsonValue } from "../../json.js";
 import type { JsonRpcError } from "./json-rpc/error.js";
 import type { JsonRpcResponse } from "./json-rpc/response.js";
 import type { RpcSender } from "./sender.js";
