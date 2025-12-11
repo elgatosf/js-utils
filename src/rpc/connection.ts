@@ -1,5 +1,6 @@
 import type { IDisposable } from "../explicit-resource-management/disposable.js";
 import { withResolvers } from "../promises.js";
+import type { RpcConnectionOptions } from "./connection-options.js";
 import { RpcMethodDispatcher } from "./dispatcher.js";
 import { JsonRpcErrorCode } from "./json-rpc/error-code.js";
 import type { JsonRpcParameters } from "./json-rpc/parameters.js";
@@ -15,7 +16,7 @@ import type { RpcResponse } from "./response.js";
 /**
  * Connection between a local and remote target, allowing for communication with JSON-RPC.
  */
-export class JsonRpcConnection {
+export class RpcConnection {
 	/**
 	 * Dispatcher responsible for routing inbound requests to method handlers.
 	 */
@@ -42,14 +43,12 @@ export class JsonRpcConnection {
 	readonly #requestPool: RpcRequestPool;
 
 	/**
-	 * Initializes a new instance of the {@link JsonRpcConnection} class.
-	 * @param receivingStream Stream responsible for receiving data.
-	 * @param sendingStream Stream responsible for sending data.
+	 * Initializes a new instance of the {@link RpcConnection} class.
+	 * @param options The connection options.
 	 */
-	constructor(
-		receivingStream: ReadableStream<string>,
-		sendingStream: WritableStream<JsonRpcRequest | JsonRpcResponse>,
-	) {
+	constructor(options: RpcConnectionOptions) {
+		const { receivingStream, sendingStream } = options;
+
 		this.#receivingStream = receivingStream;
 		this.#sendingStream = sendingStream;
 
