@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
-import type { ProcessInfo } from "../index.js";
+import type { ProcessInfo } from "./process-info.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -11,7 +11,7 @@ const execFileAsync = promisify(execFile);
  */
 export async function listPosixProcesses(): Promise<ProcessInfo[]> {
 	try {
-		const { stdout } = await execFileAsync("ps", ["-ax", "-o", "pid=,command="], {
+		const { stdout } = await execFileAsync("ps", ["-ax", "-ww", "-o", "pid=,command="], {
 			maxBuffer: 10 * 1024 * 1024,
 		});
 
