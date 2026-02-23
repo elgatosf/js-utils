@@ -12,6 +12,11 @@ export async function getProcesses(): Promise<ProcessInfo[]> {
 			return getWindowsProcesses();
 		case "linux":
 		case "darwin":
+		case "freebsd":
+		case "openbsd":
+		case "netbsd":
+		case "aix":
+		case "sunos":
 			return getPosixProcesses();
 		default:
 			throw new Error(`Unsupported platform: ${process.platform}`);
