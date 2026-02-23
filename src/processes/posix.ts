@@ -6,10 +6,10 @@ import type { ProcessInfo } from "./process-info.js";
 const execFileAsync = promisify(execFile);
 
 /**
- * Uses `ps` which is available on macOS, BSD, and most POSIX systems.
- * @returns A promise that resolves to an array of `ProcessInfo` objects representing the currently running processes on a POSIX-compliant system. Each object contains the PID and the full command line of the process. If the `ps` command fails for any reason, it returns an empty array.
+ * Uses `ps` to list running processes on POSIX-compliant systems (Linux, macOS, BSD, etc.).
+ * @returns A promise that resolves to an array of `ProcessInfo` objects representing the currently running processes on the system. Each object contains the PID and the full command line of the process. If the `ps` command fails for any reason, it returns an empty array.
  */
-export async function listPosixProcesses(): Promise<ProcessInfo[]> {
+export async function getPosixProcesses(): Promise<ProcessInfo[]> {
 	try {
 		const { stdout } = await execFileAsync("ps", ["-ax", "-ww", "-o", "pid=,command="], {
 			maxBuffer: 10 * 1024 * 1024,
