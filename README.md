@@ -200,6 +200,19 @@ import { parseNumber } from "@elgato/utils";
 const number = parseNumber("13"); // 13
 ```
 
+## Processes
+
+### `getProcesses()`
+
+Gets the running processes in a cross-platform way.
+
+```js
+import { getProcesses } from "@elgato/utils";
+
+const processes = await getProcesses();
+console.log(processes);
+```
+
 ## Promises
 
 ### `withResolvers()`
