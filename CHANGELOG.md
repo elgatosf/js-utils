@@ -14,6 +14,10 @@
 
 ## 0.4.3
 
+- Add export `ProcessInfo` type
+
+## 0.4.2
+
 ### ✨ New
 
 - Add `getProcesses` function to retrieve a list of running processes.
