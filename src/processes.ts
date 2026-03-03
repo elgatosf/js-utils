@@ -22,3 +22,5 @@ export async function getProcesses(): Promise<ProcessInfo[]> {
 			throw new Error(`Unsupported platform: ${process.platform}`);
 	}
 }
+
+export type { ProcessInfo };
