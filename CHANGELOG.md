@@ -12,6 +12,12 @@
 
 # Change Log
 
+## 0.4.4
+
+### 🐞 Fix
+
+- Fix format test
+
 ## 0.4.3
 
 - Add export `ProcessInfo` type

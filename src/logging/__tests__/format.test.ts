@@ -38,7 +38,7 @@ describe("stringFormatter", () => {
 	});
 
 	describe("full", () => {
-		const mockedDate = new Date(2000, 11, 25, 10, 30, 0, 123);
+		const mockedDate = new Date("2000-12-25T10:30:00.123Z");
 		const mockedDateString = "2000-12-25T10:30:00.123Z";
 
 		beforeEach(() => vi.useFakeTimers().setSystemTime(mockedDate));
