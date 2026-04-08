@@ -1,9 +1,9 @@
 import { z } from "zod/v4-mini";
 
 /**
- * An option within a list of options or option group.
+ * Serializable structure that represents an option.
  */
-export interface Option {
+export type Option = {
 	/**
 	 * Discriminator property used to identify an option.
 	 */
@@ -23,10 +23,10 @@ export interface Option {
 	 * Value this option represents.
 	 */
 	value: boolean | number | string;
-}
+};
 
 /**
- * An option within a list of options or option group.
+ * Serializable structure that represents an option.
  */
 export const Option: z.ZodMiniType<Option> = z.object({
 	type: z.literal("option"),

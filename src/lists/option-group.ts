@@ -4,7 +4,7 @@ import type { DataList } from "./data-list.js";
 import { Option } from "./option.js";
 
 /**
- * Grouping of options.
+ * Serializable structure that represents a grouping of option.
  */
 export type OptionGroup = {
 	/**
@@ -29,7 +29,7 @@ export type OptionGroup = {
 };
 
 /**
- * Grouping of options.
+ * Serializable structure that represents a grouping of option.
  */
 export const OptionGroup: z.ZodMiniType<OptionGroup> = z.object({
 	type: z.literal("option-group"),
