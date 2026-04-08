@@ -42,7 +42,7 @@ describe("option", () => {
 describe("Option", () => {
 	it("can parse", () => {
 		// Arrange.
-		const data = {
+		const data: Option = {
 			type: "option",
 			label: "Elgato",
 			disabled: false,
@@ -53,15 +53,15 @@ describe("Option", () => {
 		const opt = Option.parse(data);
 
 		// Assert
+		expect(opt.type).toBe("option");
 		expect(opt.disabled).toBe(false);
 		expect(opt.label).toBe("Elgato");
-		expect(opt.type).toBe("option");
 		expect(opt.value).toBe("elg");
 	});
 
 	it("does not require disabled", () => {
 		// Arrange.
-		const data = {
+		const data: Option = {
 			type: "option",
 			label: "Elgato",
 			value: "elg",
@@ -71,9 +71,9 @@ describe("Option", () => {
 		const opt = Option.parse(data);
 
 		// Assert
+		expect(opt.type).toBe("option");
 		expect(opt.disabled).toBeUndefined();
 		expect(opt.label).toBe("Elgato");
-		expect(opt.type).toBe("option");
 		expect(opt.value).toBe("elg");
 	});
 
