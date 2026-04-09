@@ -13,7 +13,7 @@ export type OptionGroup = {
 	type: "option-group";
 
 	/**
-	 * Determines whether the option group is disabled; default `false`.
+	 * Determines whether the option group is disabled.
 	 */
 	disabled?: boolean;
 
