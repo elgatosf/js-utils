@@ -72,7 +72,7 @@ describe("optionGroup", () => {
 /**
  * Provides assertions for parsing data to an `OptionGroup`.
  */
-describe("Option", () => {
+describe("OptionGroup", () => {
 	it("can parse", () => {
 		// Arrange.
 		const options: DataList = [
