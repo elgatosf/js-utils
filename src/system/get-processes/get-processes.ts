@@ -1,5 +1,5 @@
+import type { ProcessInfo } from "../process-info.js";
 import { getPosixProcesses } from "./posix.js";
-import type { ProcessInfo } from "./process-info.js";
 import { getWindowsProcesses } from "./win32.js";
 
 /**

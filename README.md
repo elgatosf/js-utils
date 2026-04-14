@@ -207,7 +207,7 @@ const number = parseNumber("13"); // 13
 Gets the running processes in a cross-platform way.
 
 ```js
-import { getProcesses } from "@elgato/utils";
+import { getProcesses } from "@elgato/utils/system";
 
 const processes = await getProcesses();
 console.log(processes);

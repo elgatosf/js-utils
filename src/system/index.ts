@@ -1,2 +1,2 @@
-export { getProcesses } from "./processes/get-processes.js";
-export type { ProcessInfo } from "./processes/process-info.js";
+export { getProcesses } from "./get-processes/get-processes.js";
+export type { ProcessInfo } from "./process-info.js";
