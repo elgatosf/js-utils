@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { getProcesses } from "../processes.js";
-import * as posix from "../processes/posix.js";
-import * as win32 from "../processes/win32.js";
+import { getProcesses } from "../get-processes.js";
+import * as posix from "../posix.js";
+import * as win32 from "../win32.js";
 
-vi.mock("../processes/posix.js");
-vi.mock("../processes/win32.js");
+vi.mock("../posix.js");
+vi.mock("../win32.js");
 
 describe("getProcesses", () => {
 	const originalPlatform = process.platform;

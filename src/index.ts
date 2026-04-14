@@ -5,7 +5,6 @@ export * from "./json.js";
 export * from "./lazy.js";
 export * from "./objects.js";
 export * from "./parsers.js";
-export * from "./processes.js";
 export * from "./promises.js";
 export * from "./strings.js";
 export * from "./timers.js";

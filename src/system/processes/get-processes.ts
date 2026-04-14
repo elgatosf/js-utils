@@ -1,6 +1,6 @@
-import { getPosixProcesses } from "./processes/posix.js";
-import type { ProcessInfo } from "./processes/process-info.js";
-import { getWindowsProcesses } from "./processes/win32.js";
+import { getPosixProcesses } from "./posix.js";
+import type { ProcessInfo } from "./process-info.js";
+import { getWindowsProcesses } from "./win32.js";
 
 /**
  * Gets the running processes in a cross-platform way.
@@ -22,5 +22,3 @@ export async function getProcesses(): Promise<ProcessInfo[]> {
 			throw new Error(`Unsupported platform: ${process.platform}`);
 	}
 }
-
-export type { ProcessInfo };

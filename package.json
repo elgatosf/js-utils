@@ -36,6 +36,10 @@
         "./rpc": {
             "types": "./dist/rpc/index.d.ts",
             "default": "./dist/rpc/index.js"
+        },
+        "./system": {
+            "types": "./dist/system/index.d.ts",
+            "default": "./dist/system/index.ts"
         }
     },
     "prettier": "@elgato/prettier-config",
