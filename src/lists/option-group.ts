@@ -4,13 +4,13 @@ import type { DataList } from "./data-list.js";
 import { Option } from "./option.js";
 
 /**
- * Serializable structure that represents a grouping of option.
+ * Serializable structure that represents a group of options.
  */
 export type OptionGroup = {
 	/**
 	 * Discriminator property used to identify an option group.
 	 */
-	type: "option-group";
+	readonly type: "option-group";
 
 	/**
 	 * Determines whether the option group is disabled.
@@ -29,7 +29,7 @@ export type OptionGroup = {
 };
 
 /**
- * Serializable structure that represents a grouping of option.
+ * Serializable structure that represents a group of options.
  */
 export const OptionGroup: z.ZodMiniType<OptionGroup> = z.object({
 	type: z.literal("option-group"),
