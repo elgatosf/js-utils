@@ -1,9 +1,4 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-
 import type { ProcessInfo } from "./process-info.js";
-
-const execFileAsync = promisify(execFile);
 
 /**
  * Represents the process information retrieved from Windows using PowerShell's `Get-CimInstance`. This type is used to parse the JSON output from PowerShell and extract the relevant fields for the `ProcessInfo` type.
@@ -30,11 +25,18 @@ type WindowsProcessInfo = {
 export async function getWindowsProcesses(): Promise<ProcessInfo[]> {
 	const script =
 		"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-CimInstance Win32_Process | Select-Object ProcessId,CommandLine,Name | ConvertTo-Json -Compress";
+
 	try {
+		const { execFile } = await import("node:child_process");
+		const { promisify } = await import("node:util");
+
+		const execFileAsync = promisify(execFile);
+
 		const { stdout } = await execFileAsync("powershell", ["-NoProfile", "-Command", script], {
 			maxBuffer: 10 * 1024 * 1024,
 			encoding: "utf8",
 		});
+
 		// Normalize output: remove any leading UTF-8 BOM to avoid JSON.parse issues.
 		const normalizedStdout = stdout.replace(/^\uFEFF/, "");
 		if (!normalizedStdout.trim()) {
