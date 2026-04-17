@@ -10,3 +10,8 @@ export * from "./promises.js";
 export * from "./strings.js";
 export * from "./timers.js";
 export * from "./types.js";
+
+export type { DataList } from "./lists/data-list.js";
+export { OptionGroup, optionGroup } from "./lists/option-group.js";
+export type { OptionList } from "./lists/option-list.js";
+export { Option, option } from "./lists/option.js";
