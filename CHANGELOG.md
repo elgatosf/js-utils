@@ -12,6 +12,16 @@
 
 # Change Log
 
+## 0.4.5
+
+### ✨ New
+
+- Add data-list, option, and option group types and creation functions.
+
+### 🐞 Fix
+
+- Fix support for importing into the browser by lazily importing Node.js modules as part of `getProcesses()`.
+
 ## 0.4.4
 
 ### 🐞 Fix
