@@ -1,9 +1,4 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-
 import type { ProcessInfo } from "./process-info.js";
-
-const execFileAsync = promisify(execFile);
 
 /**
  * Uses `ps` to list running processes on POSIX-compliant systems (Linux, macOS, BSD, etc.).
@@ -11,6 +6,11 @@ const execFileAsync = promisify(execFile);
  */
 export async function getPosixProcesses(): Promise<ProcessInfo[]> {
 	try {
+		const { execFile } = await import("node:child_process");
+		const { promisify } = await import("node:util");
+
+		const execFileAsync = promisify(execFile);
+
 		const { stdout } = await execFileAsync("ps", ["-ax", "-ww", "-o", "pid=,command="], {
 			maxBuffer: 10 * 1024 * 1024,
 		});
