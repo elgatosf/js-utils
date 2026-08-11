@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This repository has now moved to the [Stream Deck SDK](https://github.com/elgatosf/streamdeck) repository.
+
 <div align="center">
 
 # @elgato/utils
